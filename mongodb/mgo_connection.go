@@ -110,7 +110,7 @@ func (c *Connection) Table(tableName string, parms map[string]interface{}) db.IC
 	limit, hasLimit := parms["limit"]
 
 	if hasPipe {
-		cs.mgoPipe := cs.mgoColl.Pipe(pipe)
+		cs.mgoPipe := cs.mgoColl.Pipe(pipe).AllowDiskUse()
 		cs.Type = CursorType_Pipe
 	} else {
 		cs.Type = CursorType_Query
