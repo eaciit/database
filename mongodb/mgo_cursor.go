@@ -30,17 +30,22 @@ func (c *Cursor) validate() error {
 	return nil
 }
 
-func (c *Cursor) FetchAll(result interface{}) error {
+func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 	var e error
 	e = c.validate()
 	if e != nil {
 		return e
 	}
 	if c.Type == CursorType_Pipe {
-		return c.mgoPipe.All(result)
+		e = c.mgoPipe.All(result)
 	} else {
-		return c.mgoQuery.All(result)
+		e = c.mgoQuery.All(result)
 	}
+
+	if closeCursor {
+		c.Close()
+	}
+	return e
 }
 
 func (c *Cursor) ResetFetch() error {
@@ -75,6 +80,7 @@ func (c *Cursor) Fetch(result interface{}) (bool, error) {
 		}
 	}
 	boolIter := c.mgoIter.Next(result)
+
 	return boolIter, nil
 }
 

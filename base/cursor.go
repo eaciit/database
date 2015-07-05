@@ -7,8 +7,8 @@ import (
 type ICursor interface {
 	ResetFetch() error
 	Fetch(interface{}) (bool, error)
-	FetchN(int, interface{}) (int, error)
-	FetchAll(interface{}) error
+	FetchN(int, interface{}, bool) (int, error)
+	FetchAll(interface{}, bool) error
 	Count() int
 	Close()
 }
@@ -29,11 +29,11 @@ func (i *CursorBase) Fetch(result interface{}) (bool, error) {
 	return false, errorlib.Error("database", "CursorBase", "Fetch", "Not yet implemented")
 }
 
-func (i *CursorBase) FetchN(nCount int, result interface{}) (int, error) {
+func (i *CursorBase) FetchN(nCount int, result interface{}, closeCursor bool) (int, error) {
 	return 0, errorlib.Error("database", "CursorBase", "FetchN", "Not yet implemented")
 }
 
-func (i *CursorBase) FetchAll(result interface{}) error {
+func (i *CursorBase) FetchAll(result interface{}, closeCursor bool) error {
 	return errorlib.Error("database", "CursorBase", "FetchAll", "Not yet implemented")
 }
 
