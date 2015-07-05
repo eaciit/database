@@ -31,9 +31,8 @@ type AdapterBase struct {
 
 func (a *AdapterBase) SetCommand(commandType string, command ICommand) {
 	commandType = strings.ToLower(commandType)
-	if command != nil {
-		command.Prop("type", commandType)
-	}
+
+	command.Prop("Type", commandType)
 	if commandType == DB_INSERT {
 		a.InsertCommand = command
 	} else if commandType == DB_UPDATE {

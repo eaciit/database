@@ -24,6 +24,7 @@ func (c *Command) Run(data interface{}, parms map[string]interface{}) (base.ICur
 	sess, mgoColl := c.Connection.(*Connection).CopySession(c.Text)
 	defer sess.Close()
 
+	_ = "breakpoint"
 	var find bson.M
 	if c.Type != base.DB_SELECT {
 		var idField reflect.Value
@@ -72,9 +73,9 @@ func (c *Command) Run(data interface{}, parms map[string]interface{}) (base.ICur
 	} else if c.Type == base.DB_UPDATE {
 		e = mgoColl.Update(find, data)
 	} else if c.Type == base.DB_DELETE {
-		_ = "breakpoint"
 		e = mgoColl.Remove(find)
 	} else if c.Type == base.DB_SAVE {
+		_ = "breakpoint"
 		_, e = mgoColl.Upsert(find, data)
 		if e == nil {
 			return nil, 0, nil

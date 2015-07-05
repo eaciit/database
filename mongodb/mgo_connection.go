@@ -109,8 +109,9 @@ func (c *Connection) Table(tableName string, parms map[string]interface{}) db.IC
 	skip, hasSkip := parms["skip"]
 	limit, hasLimit := parms["limit"]
 
+	_ = "breakpoint"
 	if hasPipe {
-		cs.mgoPipe := cs.mgoColl.Pipe(pipe).AllowDiskUse()
+		cs.mgoPipe = cs.mgoColl.Pipe(pipe).AllowDiskUse()
 		cs.Type = CursorType_Pipe
 	} else {
 		cs.Type = CursorType_Query

@@ -21,7 +21,6 @@ func (c *CommandBase) Run(result interface{}, parms map[string]interface{}) (ICu
 	return nil, 0, nil
 }
 
-/*
 func (c *CommandBase) Prop(fieldname string, result interface{}) {
 	fieldname = strings.ToLower(fieldname)
 	if fieldname == "type" {
@@ -32,4 +31,3 @@ func (c *CommandBase) Prop(fieldname string, result interface{}) {
 		c.Settings = result.(map[string]interface{})
 	}
 }
-*/

@@ -79,13 +79,16 @@ func (c *Cursor) Fetch(result interface{}) (bool, error) {
 }
 
 func (c *Cursor) Count() int {
+	var e error
+	var n int
 	if c.mgoQuery == nil {
 		return 0
 	}
+	_ = "breakpoint"
 	if c.Type == CursorType_Pipe {
 		return 0
 	} else {
-		n, e := c.mgoQuery.Count()
+		n, e = c.mgoQuery.Count()
 	}
 	if e != nil {
 		return 0
