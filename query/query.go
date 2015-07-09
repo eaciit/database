@@ -8,6 +8,7 @@ Eq("Field1","1").And().Eq("Field2","2").Club().Or()Eq("Field1","root").ToWhere()
 import (
 	"fmt"
 	"github.com/eaciit/toolkit"
+	"time"
 )
 
 const (
@@ -15,6 +16,7 @@ const (
 	OpNe           = "$ne"
 	OpGt           = "$gt"
 	OpGte          = "$gte"
+	OpLt           = "$lt"
 	OpLte          = "$lte"
 	OpBetween      = "$between"
 	OpIn           = "$in"
@@ -25,6 +27,7 @@ const (
 	OpCloseBracket = "$)"
 	OpAnd          = "$and"
 	OpOr           = "$or"
+	OpTable        = "$table"
 )
 
 type QE struct {
@@ -45,7 +48,7 @@ type IQuery interface {
 	Gte(string, interface{}) IQuery
 	Lt(string, interface{}) IQuery
 	Lte(string, interface{}) IQuery
-	Contains(string, interface{}) IQuery
+	Contains(string, ...string) IQuery
 	StartWith(string, string) IQuery
 	EndWith(string, string) IQuery
 	Between(string, interface{}, interface{}) IQuery
@@ -59,7 +62,7 @@ type IQuery interface {
 }
 
 type Query struct {
-	elements   []QE
+	Elements   []*QE
 	stringSign string
 }
 
@@ -68,8 +71,8 @@ func (q *Query) SetStringSign(str string) IQuery {
 	return q
 }
 
-func (q *Query) add(qe IQueryElement) IQuery {
-	q.elements = append(q.elements, qe)
+func (q *Query) add(qe *QE) IQuery {
+	q.Elements = append(q.Elements, qe)
 	return q
 }
 
@@ -103,7 +106,7 @@ func (q *Query) Lte(field string, value interface{}) IQuery {
 	return q
 }
 
-func (q *Query) Contains(field string, value string) IQuery {
+func (q *Query) Contains(field string, value ...string) IQuery {
 	q.add(&QE{field, OpContains, value})
 	return q
 }
@@ -123,12 +126,8 @@ func (q *Query) Between(field string, from interface{}, to interface{}) IQuery {
 	return q
 }
 
-func (q *Query) In(fields ...interface{}) IQuery {
-	slices := make([]interface{}, 0)
-	for _, v := range slices {
-		slices = append(v)
-	}
-	q.add(&QE{field, OpInRange, slices})
+func (q *Query) In(field string, slices ...interface{}) IQuery {
+	q.add(&QE{field, OpIn, slices})
 	return q
 }
 
@@ -154,17 +153,25 @@ func (q *Query) C() IQuery {
 
 func (q *Query) ParseValue(v interface{}) string {
 	var ret string
-	switch v.Type() {
+	switch v.(type) {
 	case string:
 		if q.stringSign == "'" {
 			ret = fmt.Sprintf("'%s'", v.(string))
 		} else if q.stringSign == "\"" {
 			ret = fmt.Sprintf("\"%s\"", v.(string))
 		} else {
-			ret = fmt.Sprintf("%s%s%s", q.stringSign v.(string), q.stringSign)
+			ret = fmt.Sprintf("%s%s%s", q.stringSign, v.(string), q.stringSign)
 		}
-		break
-		
+
+	case time.Time:
+		ret = fmt.Sprintf("%s%v%s", q.stringSign, v.(time.Time).UTC(), q.stringSign)
+
+	case *time.Time:
+		ret = fmt.Sprintf("%s%v%s", q.stringSign, v.(*time.Time), q.stringSign)
+
+	case int, int32, int64, uint, uint32, uint64:
+		ret = fmt.Sprintf("%d", v.(int))
+
 	case nil:
 		ret = ""
 
@@ -176,17 +183,24 @@ func (q *Query) ParseValue(v interface{}) string {
 }
 
 func (q *Query) Parse(ins toolkit.M) interface{} {
+	return nil
 	part := ""
 	command := ""
 
-	for _, v := range q.elements {
+	for _, v := range q.Elements {
 		if v.FieldOp == OpOpenBracket {
+			command = command + part
 			part = "("
 		} else if v.FieldOp == OpCloseBracket {
 			part = part + ")"
 			command = command + part
+		} else if v.FieldOp == OpOr {
+			part = part + " or "
+		} else if v.FieldOp == OpAnd {
+			part = part + " and "
 		} else if v.FieldOp == OpEq {
-			part = part + fmt.Sprintf("%s = %s", v.FieldId, v.Value)
+			part = part + fmt.Sprintf("%s=%s", v.FieldId, q.ParseValue(v.Value))
 		}
 	}
+	return command
 }
