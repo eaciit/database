@@ -16,6 +16,7 @@ const (
 	OpGt           = "$gt"
 	OpGte          = "$gte"
 	OpLte          = "$lte"
+	OpLt           = "$lt"
 	OpBetween      = "$between"
 	OpIn           = "$in"
 	OpContains     = "$contains"
@@ -45,7 +46,7 @@ type IQuery interface {
 	Gte(string, interface{}) IQuery
 	Lt(string, interface{}) IQuery
 	Lte(string, interface{}) IQuery
-	Contains(string, interface{}) IQuery
+	Contains(string, string) IQuery
 	StartWith(string, string) IQuery
 	EndWith(string, string) IQuery
 	Between(string, interface{}, interface{}) IQuery
@@ -56,115 +57,128 @@ type IQuery interface {
 	And() IQuery
 	Or() IQuery
 	Parse(toolkit.M) interface{}
+
+	SetQ(IQuery)
+	Q() IQuery
 }
 
 type Query struct {
-	elements   []QE
+	elements   []*QE
+	q          IQuery
 	stringSign string
+}
+
+func NewQuery(q IQuery) IQuery {
+	q.SetQ(q)
+	return q
+}
+
+func (q *Query) SetQ(self IQuery) {
+	q.q = self
+}
+
+func (q *Query) Q() IQuery {
+	return q.q
 }
 
 func (q *Query) SetStringSign(str string) IQuery {
 	q.stringSign = str
-	return q
+	return q.Q()
 }
 
-func (q *Query) add(qe IQueryElement) IQuery {
+func (q *Query) add(qe *QE) IQuery {
 	q.elements = append(q.elements, qe)
-	return q
+	return q.Q()
 }
 
 func (q *Query) Eq(field string, value interface{}) IQuery {
 	q.add(&QE{field, OpEq, value})
-	return q
+	return q.Q()
 }
 
 func (q *Query) Ne(field string, value interface{}) IQuery {
 	q.add(&QE{field, OpNe, value})
-	return q
+	return q.Q()
 }
 
 func (q *Query) Gt(field string, value interface{}) IQuery {
 	q.add(&QE{field, OpGt, value})
-	return q
+	return q.Q()
 }
 
 func (q *Query) Gte(field string, value interface{}) IQuery {
 	q.add(&QE{field, OpGte, value})
-	return q
+	return q.Q()
 }
 
 func (q *Query) Lt(field string, value interface{}) IQuery {
 	q.add(&QE{field, OpLt, value})
-	return q
+	return q.Q()
 }
 
 func (q *Query) Lte(field string, value interface{}) IQuery {
 	q.add(&QE{field, OpLte, value})
-	return q
+	return q.Q()
 }
 
 func (q *Query) Contains(field string, value string) IQuery {
 	q.add(&QE{field, OpContains, value})
-	return q
+	return q.Q()
 }
 
 func (q *Query) StartWith(field string, value string) IQuery {
 	q.add(&QE{field, OpStartWith, value})
-	return q
+	return q.Q()
 }
 
 func (q *Query) EndWith(field string, value string) IQuery {
 	q.add(&QE{field, OpEndWith, value})
-	return q
+	return q.Q()
 }
 
 func (q *Query) Between(field string, from interface{}, to interface{}) IQuery {
 	q.add(&QE{field, OpBetween, QRange{from, to}})
-	return q
+	return q.Q()
 }
 
-func (q *Query) In(fields ...interface{}) IQuery {
-	slices := make([]interface{}, 0)
-	for _, v := range slices {
-		slices = append(v)
-	}
-	q.add(&QE{field, OpInRange, slices})
-	return q
+func (q *Query) In(field string, slices ...interface{}) IQuery {
+	q.add(&QE{field, OpIn, slices})
+	return q.Q()
 }
 
 func (q *Query) And() IQuery {
 	q.add(&QE{"", OpAnd, nil})
-	return q
+	return q.Q()
 }
 
 func (q *Query) Or() IQuery {
 	q.add(&QE{"", OpOr, nil})
-	return q
+	return q.Q()
 }
 
 func (q *Query) O() IQuery {
 	q.add(&QE{"", OpOpenBracket, nil})
-	return q
+	return q.Q()
 }
 
 func (q *Query) C() IQuery {
 	q.add(&QE{"", OpCloseBracket, nil})
-	return q
+	return q.Q()
 }
 
 func (q *Query) ParseValue(v interface{}) string {
 	var ret string
-	switch v.Type() {
+	switch v.(type) {
 	case string:
 		if q.stringSign == "'" {
 			ret = fmt.Sprintf("'%s'", v.(string))
 		} else if q.stringSign == "\"" {
 			ret = fmt.Sprintf("\"%s\"", v.(string))
 		} else {
-			ret = fmt.Sprintf("%s%s%s", q.stringSign v.(string), q.stringSign)
+			ret = fmt.Sprintf("%s%s%s", q.stringSign, v.(string), q.stringSign)
 		}
 		break
-		
+
 	case nil:
 		ret = ""
 
@@ -189,4 +203,5 @@ func (q *Query) Parse(ins toolkit.M) interface{} {
 			part = part + fmt.Sprintf("%s = %s", v.FieldId, v.Value)
 		}
 	}
+	return command
 }
