@@ -195,10 +195,15 @@ func (q *Query) Parse(ins toolkit.M) interface{} {
 
 	for _, v := range q.elements {
 		if v.FieldOp == OpOpenBracket {
+			command = command + part
 			part = "("
 		} else if v.FieldOp == OpCloseBracket {
 			part = part + ")"
 			command = command + part
+		} else if v.FieldOp == OpAnd {
+			part = part + " and "
+		} else if v.FieldOp == OpOr {
+			part = part + " or "
 		} else if v.FieldOp == OpEq {
 			part = part + fmt.Sprintf("%s = %s", v.FieldId, v.Value)
 		}

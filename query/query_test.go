@@ -7,8 +7,8 @@ import (
 )
 
 func TestQ(t *testing.T) {
-	q := NewQuery(new(Query)).O().Eq("username", "ariefdarmawan").And().
-		Eq("action", "system").C().
+	q := NewQuery(new(Query)).O().O().Eq("username", "ariefdarmawan").And().
+		Eq("action", "system").C().Or().O().Eq("username", "someuser").And().Eq("action", "log").C().C().
 		Or().Eq("username", "administrator")
 
 	c := q.Parse(nil)
