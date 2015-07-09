@@ -46,6 +46,7 @@ func (c *Connection) Execute(stmt string, parms map[string]interface{}) (int, er
 	var e error
 	sess, coll := c.CopySession(stmt)
 	defer sess.Close()
+
 	//coll := c.mdb.C(stmt)
 	op := ""
 	ok := true
@@ -93,7 +94,6 @@ func (c *Connection) Adapter(tableName string) db.IAdapter {
 	a.SetCommand(db.DB_DELETE, c.Command(tableName, nil))
 	a.SetCommand(db.DB_SELECT, c.Command(tableName, nil))
 	a.SetCommand(db.DB_SAVE, c.Command(tableName, nil))
-
 	return a
 }
 
