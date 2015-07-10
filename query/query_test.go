@@ -17,5 +17,5 @@ func TestQ(t *testing.T) {
 		t.Error("Unable to parse Q")
 	} else {
 		fmt.Printf("Parse result: %v \n", cmd)
-	}
-}
+	//. "github.com/eaciit/toolkit"
+)
