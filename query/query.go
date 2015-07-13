@@ -16,7 +16,6 @@ const (
 	OpNe           = "$ne"
 	OpGt           = "$gt"
 	OpGte          = "$gte"
-	OpLt           = "$lt"
 	OpLte          = "$lte"
 	OpLt           = "$lt"
 	OpBetween      = "$between"
@@ -28,11 +27,7 @@ const (
 	OpCloseBracket = "$)"
 	OpAnd          = "$and"
 	OpOr           = "$or"
-<<<<<<< HEAD
 	OpChain        = "$chain"
-=======
-	OpTable        = "$table"
->>>>>>> origin/master
 )
 
 type QE struct {
@@ -212,13 +207,12 @@ func (q *Query) ParseValue(v interface{}) string {
 	return ret
 }
 
-<<<<<<< HEAD
 func (q *Query) Command(result *toolkit.M, ins toolkit.M) error {
 	m := *result
 	if !m.Has("Data") {
 		m.Set("Data", "")
 	}
-	for i := 0; i < len(q.elements); {
+	for i := 0; i < len(q.Elements); {
 		i = q.Parse(result, ins, i)
 	}
 	return nil
@@ -227,53 +221,34 @@ func (q *Query) Command(result *toolkit.M, ins toolkit.M) error {
 func (q *Query) Parse(result *toolkit.M, ins toolkit.M, idx int) int {
 	//temp := toolkit.M{}
 	m := *result
-=======
-func (q *Query) Parse(ins toolkit.M) interface{} {
-	return nil
->>>>>>> origin/master
 	part := ""
 	temp := toolkit.M{}
 
-<<<<<<< HEAD
 	valid := true
-	for i := idx; i < len(q.elements) && valid; {
-		v := q.elements[i]
+	for i := idx; i < len(q.Elements) && valid; {
+		v := q.Elements[i]
 		_ = "breakpoint"
-=======
-	for _, v := range q.Elements {
->>>>>>> origin/master
 		if v.FieldOp == OpOpenBracket {
 			i = q.Parse(&temp, ins, i+1)
 			part += "(" + temp.Get("Data", "").(string)
 			m["Data"] = m.Get("Data", "").(string) + part
 			return i
 		} else if v.FieldOp == OpCloseBracket {
-<<<<<<< HEAD
 			m := *result
 			m["Data"] = m.Get("Data", "").(string) + part + ")"
 			return i + 1
-		} else if v.FieldOp == OpAnd {
-			part = part + " and "
-=======
-			part = part + ")"
-			command = command + part
->>>>>>> origin/master
 		} else if v.FieldOp == OpOr {
 			part = part + " or "
 		} else if v.FieldOp == OpAnd {
 			part = part + " and "
 		} else if v.FieldOp == OpEq {
-<<<<<<< HEAD
 			part = part + fmt.Sprintf("%s = %s", v.FieldId, q.ParseValue(v.Value))
 		} else if v.FieldOp == OpChain {
 			qc := v.Value.(IQuery)
 			e := qc.Command(&temp, ins)
-			if e == nil {
+			if e != nil {
 				part += temp.Get("Data", "").(string)
 			}
-=======
-			part = part + fmt.Sprintf("%s=%s", v.FieldId, q.ParseValue(v.Value))
->>>>>>> origin/master
 		}
 		idx = i
 		i++
