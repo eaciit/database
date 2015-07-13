@@ -26,6 +26,7 @@ const (
 	OpCloseBracket = "$)"
 	OpAnd          = "$and"
 	OpOr           = "$or"
+	OpChain        = "$chain"
 )
 
 type QE struct {
@@ -56,7 +57,9 @@ type IQuery interface {
 	C() IQuery
 	And() IQuery
 	Or() IQuery
-	Parse(toolkit.M) interface{}
+	Command(*toolkit.M, toolkit.M) error
+	Parse(*toolkit.M, toolkit.M, int) int
+	Chain(IQuery) IQuery
 
 	SetQ(IQuery)
 	Q() IQuery
@@ -68,7 +71,7 @@ type Query struct {
 	stringSign string
 }
 
-func NewQuery(q IQuery) IQuery {
+func New(q IQuery) IQuery {
 	q.SetQ(q)
 	return q
 }
@@ -166,6 +169,11 @@ func (q *Query) C() IQuery {
 	return q.Q()
 }
 
+func (q *Query) Chain(chainQuery IQuery) IQuery {
+	q.add(&QE{"", OpChain, chainQuery})
+	return q.Q()
+}
+
 func (q *Query) ParseValue(v interface{}) string {
 	var ret string
 	switch v.(type) {
@@ -174,6 +182,8 @@ func (q *Query) ParseValue(v interface{}) string {
 			ret = fmt.Sprintf("'%s'", v.(string))
 		} else if q.stringSign == "\"" {
 			ret = fmt.Sprintf("\"%s\"", v.(string))
+		} else if q.stringSign == "" {
+			ret = fmt.Sprintf("'%s'", v.(string))
 		} else {
 			ret = fmt.Sprintf("%s%s%s", q.stringSign, v.(string), q.stringSign)
 		}
@@ -189,24 +199,53 @@ func (q *Query) ParseValue(v interface{}) string {
 	return ret
 }
 
-func (q *Query) Parse(ins toolkit.M) interface{} {
-	part := ""
-	command := ""
+func (q *Query) Command(result *toolkit.M, ins toolkit.M) error {
+	m := *result
+	if !m.Has("Data") {
+		m.Set("Data", "")
+	}
+	for i := 0; i < len(q.elements); {
+		i = q.Parse(result, ins, i)
+	}
+	return nil
+}
 
-	for _, v := range q.elements {
+func (q *Query) Parse(result *toolkit.M, ins toolkit.M, idx int) int {
+	//temp := toolkit.M{}
+	m := *result
+	part := ""
+	temp := toolkit.M{}
+
+	valid := true
+	for i := idx; i < len(q.elements) && valid; {
+		v := q.elements[i]
+		_ = "breakpoint"
 		if v.FieldOp == OpOpenBracket {
-			command = command + part
-			part = "("
+			i = q.Parse(&temp, ins, i+1)
+			part += "(" + temp.Get("Data", "").(string)
+			m["Data"] = m.Get("Data", "").(string) + part
+			return i
 		} else if v.FieldOp == OpCloseBracket {
-			part = part + ")"
-			command = command + part
+			m := *result
+			m["Data"] = m.Get("Data", "").(string) + part + ")"
+			return i + 1
 		} else if v.FieldOp == OpAnd {
 			part = part + " and "
 		} else if v.FieldOp == OpOr {
 			part = part + " or "
 		} else if v.FieldOp == OpEq {
-			part = part + fmt.Sprintf("%s = %s", v.FieldId, v.Value)
+			part = part + fmt.Sprintf("%s = %s", v.FieldId, q.ParseValue(v.Value))
+		} else if v.FieldOp == OpChain {
+			qc := v.Value.(IQuery)
+			e := qc.Command(&temp, ins)
+			if e == nil {
+				part += temp.Get("Data", "").(string)
+			}
 		}
+		idx = i
+		i++
 	}
-	return command
+
+	m["Data"] = m.Get("Data", "").(string) + part
+	return idx + 1
 }
