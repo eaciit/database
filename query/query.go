@@ -58,8 +58,8 @@ type IQuery interface {
 	C() IQuery
 	And() IQuery
 	Or() IQuery
-	Command(*toolkit.M, toolkit.M) error
-	Parse(*toolkit.M, toolkit.M, int) int
+	Command(*toolkit.M, *toolkit.M) error
+	Parse(*toolkit.M, *toolkit.M, int) int
 	Chain(IQuery) IQuery
 
 	SetQ(IQuery)
@@ -207,7 +207,7 @@ func (q *Query) ParseValue(v interface{}) string {
 	return ret
 }
 
-func (q *Query) Command(result *toolkit.M, ins toolkit.M) error {
+func (q *Query) Command(result *toolkit.M, ins *toolkit.M) error {
 	m := *result
 	if !m.Has("Data") {
 		m.Set("Data", "")
@@ -218,7 +218,7 @@ func (q *Query) Command(result *toolkit.M, ins toolkit.M) error {
 	return nil
 }
 
-func (q *Query) Parse(result *toolkit.M, ins toolkit.M, idx int) int {
+func (q *Query) Parse(result *toolkit.M, ins *toolkit.M, idx int) int {
 	//temp := toolkit.M{}
 	m := *result
 	part := ""

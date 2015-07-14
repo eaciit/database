@@ -11,8 +11,7 @@ type MgoQuery struct {
 	currentParseMode string
 }
 
-func (q *MgoQuery) Parse(ins M) interface{} {
-	return "akoe"
+func (q *MgoQuery) Parse(result *M, ins *M, idx int) int {
 
 	part := M{}
 	command := M{}
@@ -35,5 +34,7 @@ func (q *MgoQuery) Parse(ins M) interface{} {
 			//command = append(command, p)
 		}
 	}
-	return command
+
+	result.Set("Data", command)
+	return idx + 1
 }
