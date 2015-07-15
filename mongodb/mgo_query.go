@@ -2,36 +2,39 @@ package mongodb
 
 import (
 	//"fmt"
-	. "github.com/eaciit/database/query"
+	"github.com/eaciit/database/query"
 	. "github.com/eaciit/toolkit"
 )
 
 type MgoQuery struct {
-	Query
+	query.Query
 	currentParseMode string
 }
 
-func (q *MgoQuery) Parse(qe QE, ins *M) interface{} {
-	var v QE
-	result := M{}
+func (q *MgoQuery) Parse(result *M, ins *M, idx int) int {
 
-	if qe.FieldOp == OpEq {
-		result.Set(qe.FieldId, qe.Value)
-	} else if qe.FieldOp == OpNe {
-		result.Set(qe.FieldId, M{}.Set("$ne", qe.Value))
-	} else if qe.FieldOp == OpOr {
-		ms := make([]M, 0)
-		for _, v = range qe.Value.([]QE) {
-			ms = append(ms, q.Parse(v, ins).(M))
+	part := M{}
+	command := M{}
+
+	for _, v := range q.Elements {
+		if v.FieldOp == query.OpOpenBracket {
+			if part != nil {
+				//command = append(command, part)
+			}
+			part = M{}
+		} else if v.FieldOp == query.OpCloseBracket {
+			//command = append(command, part)
+		} else if v.FieldOp == query.OpOr {
+			//part = part + " or "
+		} else if v.FieldOp == query.OpAnd {
+			//part = part + " and "
+		} else if v.FieldOp == query.OpEq {
+			p := new(M).Set("$eq", new(M).Set(v.FieldId, v.Value))
+			command = p
+			//command = append(command, p)
 		}
-		result.Set("$or", ms)
-	} else if qe.FieldOp == OpAnd {
-		ms := make([]M, 0)
-		for _, v = range qe.Value.([]QE) {
-			ms = append(ms, q.Parse(v, ins).(M))
-		}
-		result.Set("$and", ms)
 	}
 
-	return result
+	result.Set("Data", command)
+	return idx + 1
 }
