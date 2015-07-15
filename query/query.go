@@ -7,7 +7,7 @@ Eq("Field1","1").And().Eq("Field2","2").Club().Or()Eq("Field1","root").ToWhere()
 
 import (
 	"fmt"
-	"github.com/eaciit/toolkit"
+	. "github.com/eaciit/toolkit"
 	"time"
 )
 
@@ -42,32 +42,17 @@ type QRange struct {
 }
 
 type IQuery interface {
-	Eq(string, interface{}) IQuery
-	Ne(string, interface{}) IQuery
-	Gt(string, interface{}) IQuery
-	Gte(string, interface{}) IQuery
-	Lt(string, interface{}) IQuery
-	Lte(string, interface{}) IQuery
-	Contains(string, ...string) IQuery
-	StartWith(string, string) IQuery
-	EndWith(string, string) IQuery
-	Between(string, interface{}, interface{}) IQuery
-	In(string, ...interface{}) IQuery
 	SetStringSign(string) IQuery
-	O() IQuery
-	C() IQuery
-	And() IQuery
-	Or() IQuery
-	Command(*toolkit.M, *toolkit.M) error
-	Parse(*toolkit.M, *toolkit.M, int) int
-	Chain(IQuery) IQuery
+	Command(*M, *M, ...QE) error
+	StringValue(interface{}) string
+	Parse(QE, *M) interface{}
 
 	SetQ(IQuery)
 	Q() IQuery
 }
 
 type Query struct {
-	Elements   []*QE
+	Elements   []QE
 	q          IQuery
 	stringSign string
 }
@@ -87,95 +72,103 @@ func (q *Query) Q() IQuery {
 
 func (q *Query) SetStringSign(str string) IQuery {
 	q.stringSign = str
-	return q.Q()
-}
-
-func (q *Query) add(qe *QE) IQuery {
-	q.Elements = append(q.Elements, qe)
 	return q
 }
 
-func (q *Query) Eq(field string, value interface{}) IQuery {
-	q.add(&QE{field, OpEq, value})
-	return q.Q()
+func Eq(field string, value interface{}) QE {
+	return QE{field, OpEq, value}
 }
 
-func (q *Query) Ne(field string, value interface{}) IQuery {
-	q.add(&QE{field, OpNe, value})
-	return q.Q()
+func Ne(field string, value interface{}) QE {
+	return QE{field, OpNe, value}
+
 }
 
-func (q *Query) Gt(field string, value interface{}) IQuery {
-	q.add(&QE{field, OpGt, value})
-	return q.Q()
+func Gt(field string, value interface{}) QE {
+	return QE{field, OpGt, value}
+
 }
 
-func (q *Query) Gte(field string, value interface{}) IQuery {
-	q.add(&QE{field, OpGte, value})
-	return q.Q()
+func Gte(field string, value interface{}) QE {
+	return QE{field, OpGte, value}
+
 }
 
-func (q *Query) Lt(field string, value interface{}) IQuery {
-	q.add(&QE{field, OpLt, value})
-	return q.Q()
+func Lt(field string, value interface{}) QE {
+	return QE{field, OpLt, value}
+
 }
 
-func (q *Query) Lte(field string, value interface{}) IQuery {
-	q.add(&QE{field, OpLte, value})
-	return q.Q()
+func Lte(field string, value interface{}) QE {
+	return QE{field, OpLte, value}
+
 }
 
-func (q *Query) Contains(field string, value ...string) IQuery {
-	q.add(&QE{field, OpContains, value})
-	return q.Q()
+func Contains(field string, value ...string) QE {
+	return QE{field, OpContains, value}
+
 }
 
-func (q *Query) StartWith(field string, value string) IQuery {
-	q.add(&QE{field, OpStartWith, value})
-	return q.Q()
+func StartWith(field string, value string) QE {
+	return QE{field, OpStartWith, value}
+
 }
 
-func (q *Query) EndWith(field string, value string) IQuery {
-	q.add(&QE{field, OpEndWith, value})
-	return q.Q()
+func EndWith(field string, value string) QE {
+	return QE{field, OpEndWith, value}
+
 }
 
-func (q *Query) Between(field string, from interface{}, to interface{}) IQuery {
-	q.add(&QE{field, OpBetween, QRange{from, to}})
-	return q.Q()
+func Between(field string, from interface{}, to interface{}) QE {
+	return QE{field, OpBetween, QRange{from, to}}
 }
 
-func (q *Query) In(field string, slices ...interface{}) IQuery {
-	q.add(&QE{field, OpIn, slices})
-	return q.Q()
+func In(field string, invalues ...interface{}) QE {
+	return QE{field, OpIn, invalues}
+
 }
 
-func (q *Query) And() IQuery {
-	q.add(&QE{"", OpAnd, nil})
-	return q.Q()
+func And(qes ...QE) QE {
+	return QE{"", OpAnd, qes}
+
 }
 
-func (q *Query) Or() IQuery {
-	q.add(&QE{"", OpOr, nil})
-	return q.Q()
+func Or(qes ...QE) QE {
+	return QE{"", OpOr, qes}
+
 }
 
-func (q *Query) O() IQuery {
-	q.add(&QE{"", OpOpenBracket, nil})
-	return q.Q()
+/*func (q *Query) O() QE {
+	return QE{"", OpOpenBracket, nil}
+
 }
 
-func (q *Query) C() IQuery {
-	q.add(&QE{"", OpCloseBracket, nil})
-	return q.Q()
+func (q *Query) C() QE {
+	return QE{"", OpCloseBracket, nil}
+
 }
 
-func (q *Query) Chain(chainQuery IQuery) IQuery {
-	q.add(&QE{"", OpChain, chainQuery})
-	return q.Q()
+func (q *Query) Chain(chainQuery IQuery) QE {
+	return QE{"", OpChain, chainQuery}
+
+}
+*/
+
+func (q *Query) Command(result *M, ins *M, qes ...QE) error {
+	m := *result
+	if !m.Has("Data") {
+		m.Set("Data", "")
+	}
+	if len(qes) == 1 {
+		m.Set("Data", q.Parse(qes[0], ins))
+	} else if len(qes) > 1 {
+		newqs := And(qes...)
+		m.Set("Data", q.Parse(newqs, ins))
+	}
+	return nil
 }
 
-func (q *Query) ParseValue(v interface{}) string {
+func (q *Query) StringValue(v interface{}) string {
 	var ret string
 	switch v.(type) {
 	case string:
@@ -207,53 +200,33 @@ func (q *Query) ParseValue(v interface{}) string {
 	return ret
 }
 
-func (q *Query) Command(result *toolkit.M, ins *toolkit.M) error {
-	m := *result
-	if !m.Has("Data") {
-		m.Set("Data", "")
-	}
-	for i := 0; i < len(q.Elements); {
-		i = q.Parse(result, ins, i)
-	}
-	return nil
-}
+func (q *Query) Parse(qe QE, ins *M) interface{} {
+	var v QE
+	result := ""
 
-func (q *Query) Parse(result *toolkit.M, ins *toolkit.M, idx int) int {
-	//temp := toolkit.M{}
-	m := *result
-	part := ""
-	temp := toolkit.M{}
-
-	valid := true
-	for i := idx; i < len(q.Elements) && valid; {
-		v := q.Elements[i]
-		_ = "breakpoint"
-		if v.FieldOp == OpOpenBracket {
-			i = q.Parse(&temp, ins, i+1)
-			part += "(" + temp.Get("Data", "").(string)
-			m["Data"] = m.Get("Data", "").(string) + part
-			return i
-		} else if v.FieldOp == OpCloseBracket {
-			m := *result
-			m["Data"] = m.Get("Data", "").(string) + part + ")"
-			return i + 1
-		} else if v.FieldOp == OpOr {
-			part = part + " or "
-		} else if v.FieldOp == OpAnd {
-			part = part + " and "
-		} else if v.FieldOp == OpEq {
-			part = part + fmt.Sprintf("%s = %s", v.FieldId, q.ParseValue(v.Value))
-		} else if v.FieldOp == OpChain {
-			qc := v.Value.(IQuery)
-			e := qc.Command(&temp, ins)
-			if e != nil {
-				part += temp.Get("Data", "").(string)
+	if qe.FieldOp == OpEq {
+		result = fmt.Sprintf("%s = %s", qe.FieldId, q.StringValue(qe.Value))
+	} else if qe.FieldOp == OpNe {
+		result = fmt.Sprintf("%s != %s", qe.FieldId, q.StringValue(qe.Value))
+	} else if qe.FieldOp == OpOr {
+		tmp := ""
+		for _, v = range qe.Value.([]QE) {
+			if tmp != "" {
+				tmp = tmp + " or "
 			}
+			tmp = tmp + q.Parse(v, ins).(string)
 		}
-		idx = i
-		i++
+		result = "(" + tmp + ")"
+	} else if qe.FieldOp == OpAnd {
+		tmp := ""
+		for _, v = range qe.Value.([]QE) {
+			if tmp != "" {
+				tmp = tmp + " and "
+			}
+			tmp = tmp + q.Parse(v, ins).(string)
+		}
+		result = "(" + tmp + ")"
 	}
 
-	m["Data"] = m.Get("Data", "").(string) + part
-	return idx + 1
+	return result
 }
