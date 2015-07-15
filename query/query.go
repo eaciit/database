@@ -42,14 +42,27 @@ type QRange struct {
 }
 
 type IQuery interface {
-	SetStringSign(string) IQuery
 	Command(*Result, *M, ...QE) error
 	StringValue(interface{}) string
 	Parse(QE, *M) interface{}
+
+	SetStringSign(string) IQuery
+	SetQ(IQuery) IQuery
+	Q() IQuery
 }
 
 type Query struct {
 	stringSign string
+	q          IQuery
+}
+
+func (q *Query) SetQ(i IQuery) IQuery {
+	q.q = i
+	return q
+}
+
+func (q *Query) Q() IQuery {
+	return q.q
 }
 
 func (q *Query) SetStringSign(str string) IQuery {
@@ -137,11 +150,16 @@ func (q *Query) Chain(chainQuery IQuery) QE {
 */
 
 func (q *Query) Command(result *Result, ins *M, qes ...QE) error {
+	if q.q == nil {
+		result.Status = Status_NOK
+		result.Message = "Query object is not properly initiated. Please call SetQ"
+		return fmt.Errorf("Query object is not properly initiated. Please call SetQ")
+	}
 	if len(qes) == 1 {
-		result.Data = q.Parse(qes[0], ins)
+		result.Data = q.Q().Parse(qes[0], ins)
 	} else if len(qes) > 1 {
 		newqs := And(qes...)
-		result.Data = q.Parse(newqs, ins)
+		result.Data = q.Q().Parse(newqs, ins)
 	}
 	return nil
 }

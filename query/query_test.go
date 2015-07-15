@@ -13,7 +13,8 @@ func TestQ(t *testing.T) {
 		Eq("username", "administrator"))
 
 	c := new(Result)
-	e := new(Query).SetStringSign("\"").Command(c, nil, q)
+	qry := new(Query)
+	e := qry.SetQ(qry).SetStringSign("\"").Command(c, nil, q)
 	if e != nil {
 		t.Error("Unable to parse Q")
 	} else {
