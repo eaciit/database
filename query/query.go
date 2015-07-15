@@ -43,31 +43,13 @@ type QRange struct {
 
 type IQuery interface {
 	SetStringSign(string) IQuery
-	Command(*M, *M, ...QE) error
+	Command(*Result, *M, ...QE) error
 	StringValue(interface{}) string
 	Parse(QE, *M) interface{}
-
-	SetQ(IQuery)
-	Q() IQuery
 }
 
 type Query struct {
-	Elements   []QE
-	q          IQuery
 	stringSign string
-}
-
-func New(q IQuery) IQuery {
-	q.SetQ(q)
-	return q
-}
-
-func (q *Query) SetQ(self IQuery) {
-	q.q = self
-}
-
-func (q *Query) Q() IQuery {
-	return q.q
 }
 
 func (q *Query) SetStringSign(str string) IQuery {
@@ -154,16 +136,12 @@ func (q *Query) Chain(chainQuery IQuery) QE {
 }
 */
 
-func (q *Query) Command(result *M, ins *M, qes ...QE) error {
-	m := *result
-	if !m.Has("Data") {
-		m.Set("Data", "")
-	}
+func (q *Query) Command(result *Result, ins *M, qes ...QE) error {
 	if len(qes) == 1 {
-		m.Set("Data", q.Parse(qes[0], ins))
+		result.Data = q.Parse(qes[0], ins)
 	} else if len(qes) > 1 {
 		newqs := And(qes...)
-		m.Set("Data", q.Parse(newqs, ins))
+		result.Data = q.Parse(newqs, ins)
 	}
 	return nil
 }

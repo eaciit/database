@@ -12,12 +12,12 @@ func TestQ(t *testing.T) {
 		And(Eq("username", "someuser"), Eq("action", "log"))),
 		Eq("username", "administrator"))
 
-	c := M{}
-	e := new(Query).Command(&c, nil, q)
+	c := new(Result)
+	e := new(Query).SetStringSign("\"").Command(c, nil, q)
 	if e != nil {
 		t.Error("Unable to parse Q")
 	} else {
-		fmt.Printf("Parse result: %v \n", c)
+		fmt.Printf("Parse result: %v \n", c.Data)
 	}
 }
 
