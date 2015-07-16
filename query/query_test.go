@@ -14,7 +14,7 @@ func TestQ(t *testing.T) {
 
 	c := new(Result)
 	qry := New(new(QueryBase))
-	qry.SetQ(qry).SetStringSign("\"").Where(q).Build(c, nil)
+	qry.SetStringSign("\"").Select("username", "action").From("UserLogs").Where(q).Build(c, nil)
 	if c.Status != Status_OK {
 		t.Error("Unable to parse Q :" + c.Message)
 	} else {

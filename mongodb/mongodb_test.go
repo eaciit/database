@@ -8,16 +8,16 @@ import (
 )
 
 func TestQ(t *testing.T) {
-	qes := And(Or(
+	q := And(Or(
 		And(Eq("username", "ariefdarmawan"), Eq("action", "system")),
 		And(Eq("username", "someuser"), Eq("action", "log"))),
 		Eq("username", "administrator"))
 
 	c := new(Result)
-	q := New(new(Query))
-	e := q.SetQ(q).SetStringSign("\"").Command(c, nil, qes)
-	if e != nil {
-		t.Error("Unable to parse Q")
+	qry := New(new(Query))
+	qry.SetStringSign("\"").Select("username", "action").From("UserLogs").Where(q).Build(c, nil)
+	if c.Status != Status_OK {
+		t.Error("Unable to parse Q :" + c.Message)
 	} else {
 		fmt.Printf("Parse result: %v \n", GetJsonString(c.Data))
 	}

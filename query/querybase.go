@@ -103,9 +103,9 @@ func (q *QueryBase) Build(result *Result, ins *M) {
 
 	m := M{}
 	for k, v := range q.Elements {
-		m[k] = q.Parse(v, ins)
+		m[k] = q.Q().Parse(v, ins)
 	}
-	t, e := q.Compile(&m)
+	t, e := q.Q().Compile(&m)
 	if e != nil {
 		result.Status = Status_NOK
 		result.Message = e.Error()
@@ -117,8 +117,22 @@ func (q *QueryBase) Build(result *Result, ins *M) {
 
 func (q *QueryBase) Compile(ins *M) (interface{}, error) {
 	ret := ""
+
+	concat := func(s string, as ...string) string {
+		for _, a := range as {
+			s += " " + a
+		}
+		return s
+	}
+
+	if ins.Has("select") {
+		ret = concat(ret, ins.Get("select", "").(string))
+	}
+	if ins.Has("from") {
+		ret = concat(ret, ins.Get("from", "").(string))
+	}
 	if ins.Has("where") {
-		ret += ins.Get("where", "").(string)
+		ret = concat(ret, "where", ins.Get("where", "").(string))
 	}
 	return ret, nil
 }
@@ -159,6 +173,21 @@ func (q *QueryBase) Parse(qe *QE, ins *M) interface{} {
 	var v *QE
 	result := ""
 
+	if qe.FieldOp == OpSelect {
+		selecteds := ""
+		for _, f := range qe.Value.([]string) {
+			if selecteds != "" {
+				selecteds += ","
+			}
+			selecteds += f
+		}
+		result = fmt.Sprintf("select %s", selecteds)
+	} else
+	// handle from
+	if qe.FieldOp == OpFromTable {
+		result = fmt.Sprintf("from %s", qe.Value)
+	} else
+	// this is for order
 	if qe.FieldOp == OpEq {
 		result = fmt.Sprintf("%s = %s", qe.FieldId, q.StringValue(qe.Value))
 	} else if qe.FieldOp == OpNe {
