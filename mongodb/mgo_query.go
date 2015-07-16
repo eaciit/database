@@ -6,12 +6,12 @@ import (
 	. "github.com/eaciit/toolkit"
 )
 
-type MgoQuery struct {
-	Query
+type Query struct {
+	QueryBase
 	currentParseMode string
 }
 
-func (q *MgoQuery) Parse(qe QE, ins *M) interface{} {
+func (q *Query) Parse(qe QE, ins *M) interface{} {
 	var v QE
 	result := M{}
 

@@ -51,21 +51,21 @@ type IQuery interface {
 	Q() IQuery
 }
 
-type Query struct {
+type QueryBase struct {
 	stringSign string
 	q          IQuery
 }
 
-func (q *Query) SetQ(i IQuery) IQuery {
+func (q *QueryBase) SetQ(i IQuery) IQuery {
 	q.q = i
 	return q
 }
 
-func (q *Query) Q() IQuery {
+func (q *QueryBase) Q() IQuery {
 	return q.q
 }
 
-func (q *Query) SetStringSign(str string) IQuery {
+func (q *QueryBase) SetStringSign(str string) IQuery {
 	q.stringSign = str
 	return q
 }
@@ -133,23 +133,7 @@ func Or(qes ...QE) QE {
 
 }
 
-/*func (q *Query) O() QE {
-	return QE{"", OpOpenBracket, nil}
-
-}
-
-func (q *Query) C() QE {
-	return QE{"", OpCloseBracket, nil}
-
-}
-
-func (q *Query) Chain(chainQuery IQuery) QE {
-	return QE{"", OpChain, chainQuery}
-
-}
-*/
-
-func (q *Query) Command(result *Result, ins *M, qes ...QE) error {
+func (q *QueryBase) Command(result *Result, ins *M, qes ...QE) error {
 	if q.q == nil {
 		result.Status = Status_NOK
 		result.Message = "Query object is not properly initiated. Please call SetQ"
@@ -164,7 +148,7 @@ func (q *Query) Command(result *Result, ins *M, qes ...QE) error {
 	return nil
 }
 
-func (q *Query) StringValue(v interface{}) string {
+func (q *QueryBase) StringValue(v interface{}) string {
 	var ret string
 	switch v.(type) {
 	case string:
@@ -196,7 +180,7 @@ func (q *Query) StringValue(v interface{}) string {
 	return ret
 }
 
-func (q *Query) Parse(qe QE, ins *M) interface{} {
+func (q *QueryBase) Parse(qe QE, ins *M) interface{} {
 	var v QE
 	result := ""
 
@@ -225,4 +209,9 @@ func (q *Query) Parse(qe QE, ins *M) interface{} {
 	}
 
 	return result
+}
+
+func New(q IQuery) IQuery {
+	q.SetQ(q)
+	return q
 }

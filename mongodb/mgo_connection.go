@@ -97,6 +97,14 @@ func (c *Connection) Adapter(tableName string) db.IAdapter {
 	return a
 }
 
+func sel(q ...string) (r bson.M) {
+	r = make(bson.M, len(q))
+	for _, s := range q {
+		r[s] = 1
+	}
+	return
+}
+
 func (c *Connection) Table(tableName string, parms map[string]interface{}) db.ICursor {
 	cs := new(Cursor)
 	cs.CursorSource = db.CursorTable
@@ -107,6 +115,7 @@ func (c *Connection) Table(tableName string, parms map[string]interface{}) db.IC
 	find, hasFind := parms["find"]
 	sort, hasSort := parms["sort"]
 	skip, hasSkip := parms["skip"]
+	selectFields, hasSelectFields := parms["select"]
 	limit, hasLimit := parms["limit"]
 
 	_ = "breakpoint"
@@ -121,19 +130,20 @@ func (c *Connection) Table(tableName string, parms map[string]interface{}) db.IC
 			cs.mgoQuery = cs.mgoColl.Find(nil)
 		}
 
+		if hasSelectFields {
+			cs.mgoQuery = cs.mgoQuery.Select(sel(selectFields.([]string)...))
+		}
+
 		if hasSort {
 			cs.mgoQuery = cs.mgoQuery.Sort(sort.(string))
 		}
-
 		if hasSkip {
 			cs.mgoQuery = cs.mgoQuery.Skip(skip.(int))
 		}
-
 		if hasLimit {
 			cs.mgoQuery = cs.mgoQuery.Limit(limit.(int))
 		}
 	}
-
 	return cs
 }
 

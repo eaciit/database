@@ -14,18 +14,11 @@ func TestQ(t *testing.T) {
 		Eq("username", "administrator"))
 
 	c := new(Result)
-	q := new(MgoQuery)
+	q := New(new(Query))
 	e := q.SetQ(q).SetStringSign("\"").Command(c, nil, qes)
 	if e != nil {
 		t.Error("Unable to parse Q")
 	} else {
 		fmt.Printf("Parse result: %v \n", GetJsonString(c.Data))
-	}
-}
-
-func Do(vs ...string) {
-	fmt.Printf("You enter %d parms \n", len(vs))
-	for _, v := range vs {
-		fmt.Println(v)
 	}
 }

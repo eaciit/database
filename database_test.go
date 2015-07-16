@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 	"github.com/eaciit/database/base"
-	"github.com/eaciit/database/mongodb"
+	_ "github.com/eaciit/database/mongodb"
 	"strings"
 	"testing"
 )

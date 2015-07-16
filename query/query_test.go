@@ -13,7 +13,7 @@ func TestQ(t *testing.T) {
 		Eq("username", "administrator"))
 
 	c := new(Result)
-	qry := new(Query)
+	qry := New(new(QueryBase))
 	e := qry.SetQ(qry).SetStringSign("\"").Command(c, nil, q)
 	if e != nil {
 		t.Error("Unable to parse Q")
@@ -28,6 +28,12 @@ func Do(vs ...string) {
 		fmt.Println(v)
 	}
 }
+
+/*
+qe := filter
+q = new(new(QueryBase))
+q.Select(selected).From(TableName).Where(qe).Command()
+*/
 
 /*
 func TestQ_old(t *testing.T) {
