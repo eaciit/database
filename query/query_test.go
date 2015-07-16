@@ -14,9 +14,9 @@ func TestQ(t *testing.T) {
 
 	c := new(Result)
 	qry := New(new(QueryBase))
-	e := qry.SetQ(qry).SetStringSign("\"").Command(c, nil, q)
-	if e != nil {
-		t.Error("Unable to parse Q")
+	qry.SetQ(qry).SetStringSign("\"").Where(q).Build(c, nil)
+	if c.Status != Status_OK {
+		t.Error("Unable to parse Q :" + c.Message)
 	} else {
 		fmt.Printf("Parse result: %v \n", c.Data)
 	}

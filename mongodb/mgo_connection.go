@@ -5,7 +5,7 @@ import (
 	db "github.com/eaciit/database/base"
 	err "github.com/eaciit/errorlib"
 	"gopkg.in/mgo.v2"
-	//bson "gopkg.in/mgo.v2/bson"
+	. "gopkg.in/mgo.v2/bson"
 )
 
 type Connection struct {
@@ -97,8 +97,8 @@ func (c *Connection) Adapter(tableName string) db.IAdapter {
 	return a
 }
 
-func sel(q ...string) (r bson.M) {
-	r = make(bson.M, len(q))
+func sel(q ...string) (r M) {
+	r = make(M, len(q))
 	for _, s := range q {
 		r[s] = 1
 	}
