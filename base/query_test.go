@@ -1,4 +1,4 @@
-package query
+package base
 
 import (
 	"fmt"
@@ -12,20 +12,12 @@ func TestQ(t *testing.T) {
 		And(Eq("username", "someuser"), Eq("action", "log"))),
 		Eq("username", "administrator"))
 
-	c := new(Result)
-	qry := New(new(QueryBase))
-	qry.SetStringSign("\"").Select("username", "action").From("UserLogs").Where(q).Build(c, nil)
+	qry := NewQuery(new(QueryBase))
+	c := qry.SetStringSign("\"").Select("username", "action").From("UserLogs").Where(q).Build(nil)
 	if c.Status != Status_OK {
 		t.Error("Unable to parse Q :" + c.Message)
 	} else {
 		fmt.Printf("Parse result: %v \n", c.Data)
-	}
-}
-
-func Do(vs ...string) {
-	fmt.Printf("You enter %d parms \n", len(vs))
-	for _, v := range vs {
-		fmt.Println(v)
 	}
 }
 

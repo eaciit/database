@@ -1,4 +1,4 @@
-package query
+package base
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 )
 
 type IQuery interface {
-	Build(*Result, *M)
+	Build(*M) *Result
 	Compile(*M) (interface{}, error)
 	StringValue(interface{}) string
 	Parse(*QE, *M) interface{}
@@ -95,7 +95,8 @@ func (q *QueryBase) Limit(l int) IQuery {
 	return q
 }
 
-func (q *QueryBase) Build(result *Result, ins *M) {
+func (q *QueryBase) Build(ins *M) *Result {
+	result := new(Result)
 	if q.q == nil {
 		result.Status = Status_NOK
 		result.Message = "Query object is not properly initiated. Please call SetQ"
@@ -113,6 +114,7 @@ func (q *QueryBase) Build(result *Result, ins *M) {
 
 	result.Status = Status_OK
 	result.Data = t
+	return result
 }
 
 func (q *QueryBase) Compile(ins *M) (interface{}, error) {

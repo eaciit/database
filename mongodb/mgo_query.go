@@ -2,7 +2,7 @@ package mongodb
 
 import (
 	//"fmt"
-	. "github.com/eaciit/database/query"
+	. "github.com/eaciit/database/base"
 	. "github.com/eaciit/toolkit"
 )
 

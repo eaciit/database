@@ -16,5 +16,3 @@ const (
 	DB_SELECT = "select"
 	DB_SAVE   = "save"
 )
-
-type M map[string]interface{}

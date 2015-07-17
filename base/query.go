@@ -1,9 +1,4 @@
-package query
-
-/******************************************************************************************
-How to use:
-Eq("Field1","1").And().Eq("Field2","2").Club().Or()Eq("Field1","root").ToWhere()
-******************************************************************************************/
+package base
 
 const (
 	OpEq           = "$eq"
@@ -103,7 +98,7 @@ func Or(qes ...*QE) *QE {
 
 }
 
-func New(q IQuery) IQuery {
+func NewQuery(q IQuery) IQuery {
 	q.SetQ(q)
 	return q
 }
