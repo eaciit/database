@@ -9,6 +9,9 @@ import (
 
 type IQuery interface {
 	Build(M) (ICommand, error)
+	Command(M) ICommand
+	Cursor(M) ICursor
+	Run(M) (ICursor, int, error)
 	Compile(M) (ICommand, error)
 	StringValue(interface{}) string
 	Parse(*QE, M) interface{}
@@ -136,6 +139,31 @@ func (q *QueryBase) Build(ins M) (ICommand, error) {
 		m[k] = q.Q().Parse(v, ins)
 	}
 	return q.Q().Compile(m)
+}
+
+func (q *QueryBase) Command(ins M) ICommand {
+	cmd, _ := q.Build(ins)
+	return cmd
+}
+
+func (q *QueryBase) Cursor(ins M) ICursor {
+	cmd, e := q.Build(ins)
+	if e != nil {
+		return nil
+	}
+	cursor, _, e := cmd.Run(nil, ins)
+	if e != nil {
+		return nil
+	}
+	return cursor
+}
+
+func (q *QueryBase) Run(ins M) (ICursor, int, error) {
+	cmd, e := q.Build(ins)
+	if e != nil {
+		return nil, 0, nil
+	}
+	return cmd.Run(nil, ins)
 }
 
 func (q *QueryBase) Compile(ins M) (ICommand, error) {

@@ -17,21 +17,18 @@ func connect() {
 	}
 }
 
-func prepareCommand() (ICommand, error) {
-	q := Eq("_id", "user01")
-
+func prepareQuery() IQuery {
 	qry := conn.Query()
 	return qry.SetStringSign("\"").
-		//Select("fullname", "email").
+		Select("fullname", "email").
 		From("ORMUsers").
-		Where(q).
-		Build(nil)
+		Where(Or(Eq("_id", "user10"), Eq("_id", "user20")))
 }
 
 func TestQ(t *testing.T) {
 	connect()
 	defer conn.Close()
-	_, e := prepareCommand()
+	_, e := prepareQuery().Build(nil)
 	if e != nil {
 		t.Error("Unable to parse Q :" + e.Error())
 	} else {
@@ -42,19 +39,8 @@ func TestQ(t *testing.T) {
 func TestR(t *testing.T) {
 	connect()
 	defer conn.Close()
-	c, e := prepareCommand()
-
-	if e != nil {
-		t.Error("Unable to parse Q :" + e.Error())
-	}
 
 	ms := make([]M, 0)
-	cursor, _, err := c.Run(nil, nil)
-	if err != nil {
-		t.Error("Unable to Execute command :" + e.Error())
-	} else {
-		fmt.Printf("Record found: %d \n", cursor.Count())
-		cursor.FetchAll(&ms, true)
-		fmt.Printf("Result: \n%v\n", ms)
-	}
+	prepareQuery().Cursor(nil).FetchAll(&ms, true)
+	fmt.Printf("Result: \n%v\n", ms)
 }
