@@ -1,8 +1,9 @@
 package mongodb
 
 import (
-	//"fmt"
+	_ "fmt"
 	. "github.com/eaciit/database/base"
+	"github.com/eaciit/errorlib"
 	. "github.com/eaciit/toolkit"
 )
 
@@ -11,20 +12,36 @@ type Query struct {
 	currentParseMode string
 }
 
-func (q *Query) Compile(ins *M) (interface{}, error) {
-	ret := M{}
+func (q *Query) Compile(ins M) (ICommand, error) {
+	commandType := q.CommandType(ins)
+	command := new(Command)
+	parm := M{}
 
+	//_ = "breakpoint"
+	tableName := ""
+	if ins.Has("from") {
+		tableName = ins.Get("from", "").(string)
+	} else {
+		return nil, errorlib.Error(packageName, modQuery, "Compile", "No collection specified in Query")
+	}
 	if ins.Has("select") {
+		//_ = "breakpoint"
+		parm.Set("select", ins.Get("select", []string{}))
 		//ret["select"] = ins.Get("select", M{}).(M)["select"]
-		ret["select"] = ins.Get("select", []string{})
+		//ret["select"] = ins.Get("select", []string{})
 	}
 	if ins.Has("where") {
-		ret["find"] = ins.Get("where", M{})
+		parm.Set("find", ins.Get("where", M{}))
 	}
-	return ret, nil
+	//_ = "breakpoint"
+	command.Connection = q.Connection
+	command.Settings = parm
+	command.Text = tableName
+	command.Type = commandType
+	return command, nil
 }
 
-func (q *Query) Parse(qe *QE, ins *M) interface{} {
+func (q *Query) Parse(qe *QE, ins M) interface{} {
 	var v *QE
 	result := M{}
 
@@ -33,6 +50,11 @@ func (q *Query) Parse(qe *QE, ins *M) interface{} {
 		//_ = "breakpoint"
 		return qe.Value
 	} else
+
+	//-- from
+	if qe.FieldOp == OpFromTable {
+		return qe.Value
+	}
 
 	//--- where
 	if qe.FieldOp == OpEq {

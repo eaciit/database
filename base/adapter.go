@@ -2,13 +2,13 @@ package base
 
 import (
 	"github.com/eaciit/errorlib"
-	"strings"
+	_ "strings"
 )
 
 type IAdapter interface {
-	SetCommand(string, ICommand)
-	Command(string) ICommand
-	Run(string, interface{}, map[string]interface{}) (ICursor, int, error)
+	SetCommand(DB_OP, ICommand)
+	Command(DB_OP) ICommand
+	Run(DB_OP, interface{}, map[string]interface{}) (ICursor, int, error)
 }
 
 type AdapterType int
@@ -29,9 +29,7 @@ type AdapterBase struct {
 	SaveCommand   ICommand
 }
 
-func (a *AdapterBase) SetCommand(commandType string, command ICommand) {
-	commandType = strings.ToLower(commandType)
-
+func (a *AdapterBase) SetCommand(commandType DB_OP, command ICommand) {
 	command.Prop("Type", commandType)
 	if commandType == DB_INSERT {
 		a.InsertCommand = command
@@ -46,8 +44,7 @@ func (a *AdapterBase) SetCommand(commandType string, command ICommand) {
 	}
 }
 
-func (a *AdapterBase) Command(commandType string) ICommand {
-	commandType = strings.ToLower(commandType)
+func (a *AdapterBase) Command(commandType DB_OP) ICommand {
 	if commandType == DB_INSERT {
 		return a.InsertCommand
 	} else if commandType == DB_UPDATE {
@@ -62,10 +59,10 @@ func (a *AdapterBase) Command(commandType string) ICommand {
 	return nil
 }
 
-func (a *AdapterBase) Run(commandType string, result interface{}, parms map[string]interface{}) (ICursor, int, error) {
+func (a *AdapterBase) Run(commandType DB_OP, result interface{}, parms map[string]interface{}) (ICursor, int, error) {
 	cmd := a.Command(commandType)
 	if cmd == nil {
-		return nil, 0, errorlib.Error(packageName, modAdapter, "Run", "Command "+commandType+" is not initialized")
+		return nil, 0, errorlib.Error(packageName, modAdapter, "Run", "Command "+string(commandType)+" is not initialized")
 	}
 	return cmd.Run(result, parms)
 }

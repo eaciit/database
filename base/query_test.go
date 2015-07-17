@@ -2,7 +2,7 @@ package base
 
 import (
 	"fmt"
-	. "github.com/eaciit/toolkit"
+	_ "github.com/eaciit/toolkit"
 	"testing"
 )
 
@@ -13,11 +13,11 @@ func TestQ(t *testing.T) {
 		Eq("username", "administrator"))
 
 	qry := NewQuery(new(QueryBase))
-	c := qry.SetStringSign("\"").Select("username", "action").From("UserLogs").Where(q).Build(nil)
-	if c.Status != Status_OK {
-		t.Error("Unable to parse Q :" + c.Message)
+	c, e := qry.SetStringSign("\"").Select("username", "action").From("UserLogs").Where(q).Build(nil)
+	if e != nil {
+		t.Error("Unable to parse Q :" + e.Error())
 	} else {
-		fmt.Printf("Parse result: %v \n", c.Data)
+		fmt.Printf("Parse result: %v \n", c)
 	}
 }
 

@@ -42,6 +42,13 @@ func (c *Connection) Connect() error {
 	return nil
 }
 
+func (c *Connection) Query() db.IQuery {
+	//_ = "breakpoint"
+	q := db.NewQuery(new(Query))
+	q.SetConnection(c)
+	return q
+}
+
 func (c *Connection) Execute(stmt string, parms map[string]interface{}) (int, error) {
 	var e error
 	sess, coll := c.CopySession(stmt)
@@ -118,7 +125,6 @@ func (c *Connection) Table(tableName string, parms map[string]interface{}) db.IC
 	selectFields, hasSelectFields := parms["select"]
 	limit, hasLimit := parms["limit"]
 
-	_ = "breakpoint"
 	if hasPipe {
 		cs.mgoPipe = cs.mgoColl.Pipe(pipe).AllowDiskUse()
 		cs.Type = CursorType_Pipe
@@ -131,7 +137,8 @@ func (c *Connection) Table(tableName string, parms map[string]interface{}) db.IC
 		}
 
 		if hasSelectFields {
-			cs.mgoQuery = cs.mgoQuery.Select(sel(selectFields.([]string)...))
+			selecteds := sel(selectFields.([]string)...)
+			cs.mgoQuery = cs.mgoQuery.Select(selecteds)
 		}
 
 		if hasSort {

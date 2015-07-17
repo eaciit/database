@@ -9,10 +9,13 @@ const (
 	modCursor     = "CursorBase"
 )
 
+type DB_OP string
+
 const (
-	DB_INSERT = "insert"
-	DB_UPDATE = "update"
-	DB_DELETE = "delete"
-	DB_SELECT = "select"
-	DB_SAVE   = "save"
+	DB_INSERT DB_OP = "insert"
+	DB_UPDATE DB_OP = "update"
+	DB_DELETE DB_OP = "delete"
+	DB_SELECT DB_OP = "select"
+	DB_SAVE   DB_OP = "save"
+	DB_UKNOWN DB_OP = "unknown"
 )

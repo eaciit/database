@@ -2,29 +2,30 @@ package base
 
 import (
 	//"github.com/eaciit/errorlib"
+	. "github.com/eaciit/toolkit"
 	"strings"
 )
 
 type ICommand interface {
 	Prop(string, interface{})
-	Run(interface{}, map[string]interface{}) (ICursor, int, error)
+	Run(interface{}, M) (ICursor, int, error)
 }
 
 type CommandBase struct {
 	Connection IConnection
-	Type       string
+	Type       DB_OP
 	Text       string
-	Settings   map[string]interface{}
+	Settings   M
 }
 
-func (c *CommandBase) Run(result interface{}, parms map[string]interface{}) (ICursor, int, error) {
+func (c *CommandBase) Run(result interface{}, parms M) (ICursor, int, error) {
 	return nil, 0, nil
 }
 
 func (c *CommandBase) Prop(fieldname string, result interface{}) {
 	fieldname = strings.ToLower(fieldname)
 	if fieldname == "type" {
-		c.Type = result.(string)
+		c.Type = result.(DB_OP)
 	} else if fieldname == "text" {
 		c.Text = result.(string)
 	} else if fieldname == "settings" {

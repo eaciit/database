@@ -8,7 +8,7 @@ import (
 type IConnection interface {
 	Connect() error
 	Execute(string, map[string]interface{}) (int, error)
-	Query(string, map[string]interface{}) ICursor
+	Query() IQuery
 	Table(string, map[string]interface{}) ICursor
 	Adapter(string) IAdapter
 	Close()
@@ -36,8 +36,8 @@ func (i *ConnectionBase) Adapter(tablename string) IAdapter {
 	return new(AdapterBase)
 }
 
-func (c *ConnectionBase) Query(stmt string, parms map[string]interface{}) ICursor {
-	return new(CursorBase)
+func (c *ConnectionBase) Query() IQuery {
+	return NewQuery(new(QueryBase))
 }
 
 func (c *ConnectionBase) Table(tableName string, parms map[string]interface{}) ICursor {

@@ -2,15 +2,16 @@ package base
 
 import (
 	"fmt"
+	_ "github.com/eaciit/errorlib"
 	. "github.com/eaciit/toolkit"
 	"time"
 )
 
 type IQuery interface {
-	Build(*M) *Result
-	Compile(*M) (interface{}, error)
+	Build(M) (ICommand, error)
+	Compile(M) (ICommand, error)
 	StringValue(interface{}) string
-	Parse(*QE, *M) interface{}
+	Parse(*QE, M) interface{}
 
 	Select(...string) IQuery
 	Where(...*QE) IQuery
@@ -21,16 +22,24 @@ type IQuery interface {
 	Skip(int) IQuery
 	//Command(string, *QE) IQuery
 
+	CommandType(M) DB_OP
 	SetStringSign(string) IQuery
 	SetQ(IQuery) IQuery
+	SetConnection(IConnection) IQuery
 	Q() IQuery
 }
 
 type QueryBase struct {
 	stringSign string
 	q          IQuery
+	Connection IConnection
 
 	Elements map[string]*QE
+}
+
+func (q *QueryBase) SetConnection(c IConnection) IQuery {
+	q.Connection = c
+	return q.Q()
 }
 
 func (q *QueryBase) SetQ(i IQuery) IQuery {
@@ -95,7 +104,27 @@ func (q *QueryBase) Limit(l int) IQuery {
 	return q
 }
 
-func (q *QueryBase) Build(ins *M) *Result {
+func (q *QueryBase) CommandType(ins M) DB_OP {
+	dbopType := DB_SELECT
+	if ins.Has("select") {
+		dbopType = DB_SELECT
+	}
+	if ins.Has("update") {
+		dbopType = DB_UPDATE
+	}
+	if ins.Has("save") {
+		dbopType = DB_SAVE
+	}
+	if ins.Has("insert") {
+		dbopType = DB_INSERT
+	}
+	if ins.Has("delete") {
+		dbopType = DB_DELETE
+	}
+	return dbopType
+}
+
+func (q *QueryBase) Build(ins M) (ICommand, error) {
 	result := new(Result)
 	if q.q == nil {
 		result.Status = Status_NOK
@@ -106,20 +135,13 @@ func (q *QueryBase) Build(ins *M) *Result {
 	for k, v := range q.Elements {
 		m[k] = q.Q().Parse(v, ins)
 	}
-	t, e := q.Q().Compile(&m)
-	if e != nil {
-		result.Status = Status_NOK
-		result.Message = e.Error()
-	}
-
-	result.Status = Status_OK
-	result.Data = t
-	return result
+	return q.Q().Compile(m)
 }
 
-func (q *QueryBase) Compile(ins *M) (interface{}, error) {
+func (q *QueryBase) Compile(ins M) (ICommand, error) {
+	cmd := new(CommandBase)
 	ret := ""
-
+	dbopType := DB_SELECT
 	concat := func(s string, as ...string) string {
 		for _, a := range as {
 			s += " " + a
@@ -128,7 +150,20 @@ func (q *QueryBase) Compile(ins *M) (interface{}, error) {
 	}
 
 	if ins.Has("select") {
+		dbopType = DB_SELECT
 		ret = concat(ret, ins.Get("select", "").(string))
+	}
+	if ins.Has("update") {
+		dbopType = DB_UPDATE
+	}
+	if ins.Has("save") {
+		dbopType = DB_SAVE
+	}
+	if ins.Has("insert") {
+		dbopType = DB_INSERT
+	}
+	if ins.Has("delete") {
+		dbopType = DB_DELETE
 	}
 	if ins.Has("from") {
 		ret = concat(ret, ins.Get("from", "").(string))
@@ -136,7 +171,10 @@ func (q *QueryBase) Compile(ins *M) (interface{}, error) {
 	if ins.Has("where") {
 		ret = concat(ret, "where", ins.Get("where", "").(string))
 	}
-	return ret, nil
+
+	cmd.Type = dbopType
+	cmd.Text = ret
+	return cmd, nil
 }
 
 func (q *QueryBase) StringValue(v interface{}) string {
@@ -171,7 +209,7 @@ func (q *QueryBase) StringValue(v interface{}) string {
 	return ret
 }
 
-func (q *QueryBase) Parse(qe *QE, ins *M) interface{} {
+func (q *QueryBase) Parse(qe *QE, ins M) interface{} {
 	var v *QE
 	result := ""
 

@@ -8,10 +8,10 @@ import (
 	"testing"
 )
 
-func connect() (base.IConnection, error) {
-	conn := mongodb.NewConnection("localhost:27017", "", "", "ectest")
+func connect() base.IConnection {
+	conn := mongodb.NewConnection("localhost:27123", "", "", "ectest")
 	e := conn.Connect()
-	return conn, e
+	return conn
 }
 
 type UserModel struct {
