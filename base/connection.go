@@ -3,11 +3,12 @@ package base
 import (
 	"errors"
 	err "github.com/eaciit/errorlib"
+	. "github.com/eaciit/toolkit"
 )
 
 type IConnection interface {
 	Connect() error
-	Execute(string, map[string]interface{}) (int, error)
+	Execute(string, M) (int, error)
 	Query() IQuery
 	Table(string, map[string]interface{}) ICursor
 	Adapter(string) IAdapter

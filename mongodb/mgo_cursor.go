@@ -90,7 +90,7 @@ func (c *Cursor) Count() int {
 	if c.mgoQuery == nil {
 		return 0
 	}
-	_ = "breakpoint"
+	//_ = "breakpoint"
 	if c.Type == CursorType_Pipe {
 		return 0
 	} else {

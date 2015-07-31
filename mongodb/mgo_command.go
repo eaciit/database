@@ -28,18 +28,11 @@ func (c *Command) Run(data interface{}, parms toolkit.M) (base.ICursor, int, err
 	var find bson.M
 	if c.Type != base.DB_SELECT {
 		var idField reflect.Value
-		idField, hasField := toolkit.GetField(data, "Id")
-		if hasField {
-			find = bson.M{"_id": idField.Interface()}
-			/*
-				if idField.Kind() == Int {
-					find := bson.M{"_id": idField.Int()}
-				} else if idField.Kind() == String {
-					find := bson.M{"_id": idField.String()}
-				} else {
-					find := bson.M{"_id": idField.Interface()}
-				}
-			*/
+		idField, hasIdField := toolkit.Field(data, "Id")
+		if hasIdField {
+			_ = bson.M{"_id": idField.Interface()}
+		} else {
+			_, _ = parms["find"]
 		}
 	} else {
 		find, hasFind := parms["find"]
@@ -70,6 +63,10 @@ func (c *Command) Run(data interface{}, parms toolkit.M) (base.ICursor, int, err
 
 		if hasSort {
 			cursorParm["sort"] = sort
+		} else {
+			if c.Settings.Has("sort") {
+				cursorParm["sort"] = c.Settings.Get("sort", nil)
+			}
 		}
 
 		if hasSkip {

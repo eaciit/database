@@ -2,34 +2,46 @@ package base
 
 import (
 	"fmt"
-	_ "github.com/eaciit/errorlib"
+	"github.com/eaciit/errorlib"
 	. "github.com/eaciit/toolkit"
+	"reflect"
+	"strings"
 	"time"
 )
 
 type IQuery interface {
-	Build(M) (ICommand, error)
-	Command(M) ICommand
-	Cursor(M) ICursor
-	Run(M) (ICursor, int, error)
-	Compile(M) (ICommand, error)
+	Build(M) error
+	Run(M) (ICursor, interface{}, error)
+	Compile(M) (ICursor, interface{}, error)
 	StringValue(interface{}) string
 	Parse(*QE, M) interface{}
 
+	Command(M) IQuery
+	Cursor(M) ICursor
 	Select(...string) IQuery
+	SetFields(...string) IQuery
 	Where(...*QE) IQuery
-	OrderBy(*QE) IQuery
-	GroupBy(*QE) IQuery
+	OrderBy(...string) IQuery
+	GroupBy(...string) IQuery
+	Aggregate(...*QE) IQuery
 	From(string) IQuery
 	Limit(int) IQuery
 	Skip(int) IQuery
 	//Command(string, *QE) IQuery
+
+	//Transaction
+	Insert() IQuery
+	Save() IQuery
+	Update() IQuery
+	Delete() IQuery
 
 	CommandType(M) DB_OP
 	SetStringSign(string) IQuery
 	SetQ(IQuery) IQuery
 	SetConnection(IConnection) IQuery
 	Q() IQuery
+	Settings() M
+	Reset()
 }
 
 type QueryBase struct {
@@ -38,6 +50,7 @@ type QueryBase struct {
 	Connection IConnection
 
 	Elements map[string]*QE
+	settings M
 }
 
 func (q *QueryBase) SetConnection(c IConnection) IQuery {
@@ -52,6 +65,10 @@ func (q *QueryBase) SetQ(i IQuery) IQuery {
 
 func (q *QueryBase) Q() IQuery {
 	return q.q
+}
+
+func (q *QueryBase) Settings() M {
+	return q.settings
 }
 
 func (q *QueryBase) SetStringSign(str string) IQuery {
@@ -71,6 +88,16 @@ func (q *QueryBase) Select(fields ...string) IQuery {
 	return q
 }
 
+func (q *QueryBase) SetFields(fields ...string) IQuery {
+	q.addQE("set", &QE{"", OpSetfield, fields})
+	return q
+}
+
+func (q *QueryBase) Aggregate(aggregates ...*QE) IQuery {
+	q.addQE("aggregate", &QE{"", OpAggregate, aggregates})
+	return q
+}
+
 func (q *QueryBase) From(tablename string) IQuery {
 	q.addQE("from", &QE{"", OpFromTable, tablename})
 	return q
@@ -87,13 +114,13 @@ func (q *QueryBase) Where(qes ...*QE) IQuery {
 	return q
 }
 
-func (q *QueryBase) OrderBy(qe *QE) IQuery {
-	q.addQE("orderby", qe)
+func (q *QueryBase) OrderBy(fields ...string) IQuery {
+	q.addQE("orderby", &QE{"", OpOrderBy, fields})
 	return q
 }
 
-func (q *QueryBase) GroupBy(qe *QE) IQuery {
-	q.addQE("groupby", qe)
+func (q *QueryBase) GroupBy(gs ...string) IQuery {
+	q.addQE("groupby", &QE{"", OpGroupBy, gs})
 	return q
 }
 
@@ -104,6 +131,40 @@ func (q *QueryBase) Skip(s int) IQuery {
 
 func (q *QueryBase) Limit(l int) IQuery {
 	q.addQE("limit", &QE{"", OpLimit, l})
+	return q
+}
+
+func (q *QueryBase) Insert() IQuery {
+	q.addQE("insert", &QE{})
+	return q
+}
+
+func (q *QueryBase) Save() IQuery {
+	q.addQE("save", &QE{})
+	return q
+}
+
+func (q *QueryBase) Update() IQuery {
+	q.addQE("update", &QE{})
+	return q
+}
+
+func (q *QueryBase) Delete() IQuery {
+	q.addQE("delete", &QE{})
+	return q
+}
+
+// To add command pass a M object with following signature
+//
+// M["command"] => name of command
+// M[whatever] => whatever parameter require to support the command, ie:
+// M{"command":"aggregate", "pipe":pipes}
+func (q *QueryBase) Command(ins M) IQuery {
+	cmdname := ins.Get("command", "").(string)
+	if cmdname != "" {
+		cmdname = "cmd." + cmdname
+		q.addQE(cmdname, &QE{cmdname, OpCommand, ins})
+	}
 	return q
 }
 
@@ -124,85 +185,29 @@ func (q *QueryBase) CommandType(ins M) DB_OP {
 	if ins.Has("delete") {
 		dbopType = DB_DELETE
 	}
+	if ins.Has("command") {
+		dbopType = DB_COMMAND
+	}
 	return dbopType
 }
 
-func (q *QueryBase) Build(ins M) (ICommand, error) {
-	result := new(Result)
+func (q *QueryBase) Reset() {
+	q.settings = nil
+}
+
+func (q *QueryBase) Build(ins M) error {
 	if q.q == nil {
-		result.Status = Status_NOK
-		result.Message = "Query object is not properly initiated. Please call SetQ"
+		return errorlib.Error(packageName, modQuery, "Build", "Query object is not properly initiated. Please call SetQ")
 	}
 
-	m := M{}
-	for k, v := range q.Elements {
-		m[k] = q.Q().Parse(v, ins)
-	}
-	return q.Q().Compile(m)
-}
-
-func (q *QueryBase) Command(ins M) ICommand {
-	cmd, _ := q.Build(ins)
-	return cmd
-}
-
-func (q *QueryBase) Cursor(ins M) ICursor {
-	cmd, e := q.Build(ins)
-	if e != nil {
-		return nil
-	}
-	cursor, _, e := cmd.Run(nil, ins)
-	if e != nil {
-		return nil
-	}
-	return cursor
-}
-
-func (q *QueryBase) Run(ins M) (ICursor, int, error) {
-	cmd, e := q.Build(ins)
-	if e != nil {
-		return nil, 0, nil
-	}
-	return cmd.Run(nil, ins)
-}
-
-func (q *QueryBase) Compile(ins M) (ICommand, error) {
-	cmd := new(CommandBase)
-	ret := ""
-	dbopType := DB_SELECT
-	concat := func(s string, as ...string) string {
-		for _, a := range as {
-			s += " " + a
+	if q.settings == nil {
+		m := M{}
+		for k, v := range q.Elements {
+			m[k] = q.Q().Parse(v, ins)
 		}
-		return s
+		q.settings = m
 	}
-
-	if ins.Has("select") {
-		dbopType = DB_SELECT
-		ret = concat(ret, ins.Get("select", "").(string))
-	}
-	if ins.Has("update") {
-		dbopType = DB_UPDATE
-	}
-	if ins.Has("save") {
-		dbopType = DB_SAVE
-	}
-	if ins.Has("insert") {
-		dbopType = DB_INSERT
-	}
-	if ins.Has("delete") {
-		dbopType = DB_DELETE
-	}
-	if ins.Has("from") {
-		ret = concat(ret, ins.Get("from", "").(string))
-	}
-	if ins.Has("where") {
-		ret = concat(ret, "where", ins.Get("where", "").(string))
-	}
-
-	cmd.Type = dbopType
-	cmd.Text = ret
-	return cmd, nil
+	return nil
 }
 
 func (q *QueryBase) StringValue(v interface{}) string {
@@ -214,7 +219,7 @@ func (q *QueryBase) StringValue(v interface{}) string {
 		} else if q.stringSign == "\"" {
 			ret = fmt.Sprintf("\"%s\"", v.(string))
 		} else if q.stringSign == "" {
-			ret = fmt.Sprintf("'%s'", v.(string))
+			ret = fmt.Sprintf("%s", v.(string))
 		} else {
 			ret = fmt.Sprintf("%s%s%s", q.stringSign, v.(string), q.stringSign)
 		}
@@ -235,6 +240,27 @@ func (q *QueryBase) StringValue(v interface{}) string {
 		//-- do nothing
 	}
 	return ret
+}
+
+func (q *QueryBase) ParseValue(o interface{}, m M) interface{} {
+	ref := reflect.ValueOf(o)
+	if !ref.IsValid() {
+		return nil
+	}
+	if ref.Kind() == reflect.String && strings.HasPrefix(ref.String(), "@") {
+		parmName := ref.String()
+		if m.Has(parmName) {
+			ret := m[parmName]
+			rv := reflect.ValueOf(ret)
+			if rv.Kind() == reflect.String {
+				ret = q.q.StringValue(ret)
+			}
+			return ret
+		} else {
+			return nil
+		}
+	}
+	return nil
 }
 
 func (q *QueryBase) Parse(qe *QE, ins M) interface{} {
@@ -281,4 +307,26 @@ func (q *QueryBase) Parse(qe *QE, ins M) interface{} {
 	}
 
 	return result
+}
+
+// Run is used to finalize query, it will return 3 objects: cursor, interface{} and error
+// an M object is optional to be passed as entry
+// m["data"] => any data that will be saved, normally for non select
+// other than data will be used as parameters replacement
+func (q *QueryBase) Run(ins M) (ICursor, interface{}, error) {
+	var e error
+	e = q.q.Build(ins)
+	if e != nil {
+		return nil, 0, errorlib.Error(packageName, modQuery, "Run", e.Error())
+	}
+	return q.q.Compile(ins)
+}
+
+func (q *QueryBase) Compile(ins M) (ICursor, interface{}, error) {
+	return nil, nil, errorlib.Error(packageName, modQuery, "Compile", errorlib.NotYetImplemented)
+}
+
+func (q *QueryBase) Cursor(params M) ICursor {
+	c, _, _ := q.q.Run(params)
+	return c
 }

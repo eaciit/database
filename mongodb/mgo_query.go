@@ -5,40 +5,12 @@ import (
 	. "github.com/eaciit/database/base"
 	"github.com/eaciit/errorlib"
 	. "github.com/eaciit/toolkit"
+	"strings"
 )
 
 type Query struct {
 	QueryBase
 	currentParseMode string
-}
-
-func (q *Query) Compile(ins M) (ICommand, error) {
-	commandType := q.CommandType(ins)
-	command := new(Command)
-	parm := M{}
-
-	//_ = "breakpoint"
-	tableName := ""
-	if ins.Has("from") {
-		tableName = ins.Get("from", "").(string)
-	} else {
-		return nil, errorlib.Error(packageName, modQuery, "Compile", "No collection specified in Query")
-	}
-	if ins.Has("select") {
-		//_ = "breakpoint"
-		parm.Set("select", ins.Get("select", []string{}))
-		//ret["select"] = ins.Get("select", M{}).(M)["select"]
-		//ret["select"] = ins.Get("select", []string{})
-	}
-	if ins.Has("where") {
-		parm.Set("find", ins.Get("where", M{}))
-	}
-	//_ = "breakpoint"
-	command.Connection = q.Connection
-	command.Settings = parm
-	command.Text = tableName
-	command.Type = commandType
-	return command, nil
 }
 
 func (q *Query) Parse(qe *QE, ins M) interface{} {
@@ -49,6 +21,8 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 	if qe.FieldOp == OpSelect {
 		//_ = "breakpoint"
 		return qe.Value
+	} else if qe.FieldOp == OpSetfield {
+		return qe.Value
 	} else
 
 	//-- from
@@ -58,10 +32,60 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 
 	//--- where
 	if qe.FieldOp == OpEq {
-		result.Set(qe.FieldId, qe.Value)
+		result.Set(qe.FieldId, q.ParseValue(qe.Value, ins))
 	} else if qe.FieldOp == OpNe {
-		result.Set(qe.FieldId, M{}.Set("$ne", qe.Value))
-	} else if qe.FieldOp == OpOr {
+		result.Set(qe.FieldId, M{}.Set("$ne", q.ParseValue(qe.Value, ins)))
+	} else if qe.FieldOp == OpGt {
+		result.Set(qe.FieldId, M{}.Set("$gt", q.ParseValue(qe.Value, ins)))
+	} else if qe.FieldOp == OpGte {
+		result.Set(qe.FieldId, M{}.Set("$gte", q.ParseValue(qe.Value, ins)))
+	} else if qe.FieldOp == OpLt {
+		result.Set(qe.FieldId, M{}.Set("$lt", q.ParseValue(qe.Value, ins)))
+	} else if qe.FieldOp == OpLte {
+		result.Set(qe.FieldId, M{}.Set("$lte", q.ParseValue(qe.Value, ins)))
+	} else
+
+	//--- Aggregate
+	if qe.FieldOp == OpGroupBy {
+		groups := M{}
+		groupValues := qe.Value.([]string)
+		for _, v := range groupValues {
+			groups.Set(strings.Replace(v, ".", "_", -1), "$"+v)
+		}
+		return groups
+	} else if qe.FieldOp == OpAggregate {
+		aggrs := M{}
+		aggrQes := qe.Value.([]*QE)
+		for _, qe := range aggrQes {
+			m_aggr := M{}
+			if qe.FieldOp == AggrSum {
+				m_aggr.Set("$sum", "$"+qe.FieldId)
+			} else if qe.FieldOp == AggrCount {
+				m_aggr.Set("$sum", 1)
+			} else if qe.FieldOp == AggrAvg {
+				m_aggr.Set("$average", "$"+qe.FieldId)
+			} else if qe.FieldOp == AggrMin {
+				m_aggr.Set("$min", "$"+qe.FieldId)
+			} else if qe.FieldOp == AggrMax {
+				m_aggr.Set("$max", "$"+qe.FieldId)
+			} else if qe.FieldOp == AggrFirst {
+				m_aggr.Set("$first", "$"+qe.FieldId)
+			} else if qe.FieldOp == AggrLast {
+				m_aggr.Set("$last", "$"+qe.FieldId)
+			}
+			aggrs.Set(strings.Replace(qe.FieldOp, "$", "", -1)+"_"+qe.FieldId, m_aggr)
+		}
+		//_ = "breakpoint"
+		return aggrs
+	} else
+	//--- Skip & Limit
+	if qe.FieldOp == OpSkip {
+		return qe.Value
+	} else if qe.FieldOp == OpLimit {
+		return qe.Value
+	} else
+	//--- And
+	if qe.FieldOp == OpOr {
 		ms := make([]M, 0)
 		for _, v = range qe.Value.([]*QE) {
 			ms = append(ms, q.Parse(v, ins).(M))
@@ -73,7 +97,148 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 			ms = append(ms, q.Parse(v, ins).(M))
 		}
 		result.Set("$and", ms)
+	} else {
+		return nil
+	}
+	return result
+}
+
+func mapEither(m1 M, m2 M, element string) (interface{}, bool) {
+	if m1.Has(element) && m1[element] != nil {
+		return m1[element], true
+	} else if m2.Has(element) && m2[element] != nil {
+		return m2[element], true
+	} else {
+		return nil, false
+	}
+}
+
+func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
+	var e error
+	s := q.Settings()
+	tableName := s.Get("from", "").(string)
+	if tableName == "" {
+		return nil, nil, errorlib.Error(packageName, modQuery, "Run", "No table / data source name specified")
 	}
 
-	return result
+	if ins == nil {
+		ins = M{}
+	}
+
+	commandType := q.CommandType(s)
+
+	var find M
+	data, hasData := ins["data"]
+	findQE, hasFind := ins["find"]
+	if hasFind {
+		find = q.Parse(findQE.(*QE), nil).(M)
+	}
+	if commandType == DB_SELECT {
+		// read setting from main parms
+		sort, hasSort := mapEither(ins, s, "sort")
+		skip, hasSkip := mapEither(ins, s, "skip")
+		fields, hasFields := mapEither(ins, s, "select")
+		limit, hasLimit := mapEither(ins, s, "limit")
+
+		// if not available then read it from settings
+		cursorParm := M{}
+		if s.Has("where") {
+			cursorParm["find"] = s.Get("where", nil)
+		}
+		if hasFind {
+			if s.Has("find") {
+				cursorParm["find"] = M{"$and": []interface{}{s["where"], find}}
+			} else {
+				cursorParm["find"] = find
+			}
+		}
+
+		if hasFields {
+			cursorParm["select"] = fields
+		} else {
+			if s.Has("select") {
+				cursorParm["select"] = s.Get("select", nil)
+			}
+		}
+
+		if hasSort {
+			cursorParm["sort"] = sort
+		} else {
+			if s.Has("sort") {
+				cursorParm["sort"] = s.Get("sort", nil)
+			}
+		}
+
+		if hasSkip {
+			cursorParm["skip"] = skip
+		}
+
+		if hasLimit {
+			cursorParm["limit"] = limit
+		}
+
+		//--- handle aggregat compilation
+		groupby, hasgroupby := s["groupby"]
+		if hasgroupby {
+			pipe := M{}
+			groupm := M{}
+			groupm.Set("_id", groupby)
+			aggrs, hasaggr := s["aggregate"]
+			if hasaggr {
+				for k, v := range aggrs.(M) {
+					groupm.Set(k, v)
+				}
+			}
+			pipe.Set("$group", groupm)
+
+			pipes := []M{}
+			pipes = append(pipes, pipe)
+			if hasSkip {
+				pipes = append(pipes, M{}.Set("$skip", cursorParm["skip"].(int)))
+			}
+			if hasLimit {
+				pipes = append(pipes, M{}.Set("$limit", cursorParm["limit"].(int)))
+			}
+
+			cursorParm = M{}
+			cursorParm.Set("pipe", pipes)
+		}
+		//_ = "breakpoint"
+		cursor := q.Connection.Table(tableName, cursorParm)
+		return cursor, 0, nil
+	} else {
+		sess, mgoColl := q.Connection.(*Connection).CopySession(tableName)
+		defer sess.Close()
+
+		if hasData {
+			idField := Id(data)
+			hasIdField := idField != nil
+			if hasIdField {
+				hasFind = true
+				find = M{"_id": idField}
+			}
+		}
+
+		if !hasFind {
+			find = M{}
+		}
+
+		if commandType == DB_INSERT {
+			e = mgoColl.Insert(data)
+		} else if commandType == DB_UPDATE {
+			e = mgoColl.Update(find, data)
+		} else if commandType == DB_DELETE {
+			e = mgoColl.Remove(find)
+		} else if commandType == DB_SAVE {
+			//_ = "breakpoint"
+			_, e = mgoColl.Upsert(find, data)
+			if e == nil {
+				return nil, 0, nil
+			}
+		}
+		if e != nil {
+			return nil, 0, errorlib.Error(packageName, modQuery+"."+string(commandType), "Run", e.Error())
+		}
+	}
+	return nil, 0, nil
 }

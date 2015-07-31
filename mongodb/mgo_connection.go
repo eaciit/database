@@ -1,11 +1,13 @@
 package mongodb
 
 import (
-	//"fmt"
+	_ "fmt"
+	. "github.com/eaciit/database/base"
 	db "github.com/eaciit/database/base"
 	err "github.com/eaciit/errorlib"
+	. "github.com/eaciit/toolkit"
 	"gopkg.in/mgo.v2"
-	. "gopkg.in/mgo.v2/bson"
+	//"gopkg.in/mgo.v2/bson"
 )
 
 type Connection struct {
@@ -31,7 +33,23 @@ func (c *Connection) CopySession(tableName string) (*mgo.Session, *mgo.Collectio
 }
 
 func (c *Connection) Connect() error {
-	sess, e := mgo.Dial(c.Host)
+	info := new(mgo.DialInfo)
+	if c.UserName != "" {
+		info.Username = c.UserName
+		info.Password = c.Password
+	}
+	info.Addrs = []string{c.Host}
+	info.Database = c.Database
+	info.Source = "admin"
+	//info.PoolLimit = 100
+	sess, e := mgo.DialWithInfo(info)
+	/*
+		mgoConnectionString := c.Host
+		if c.UserName != "" {
+			mgoConnectionString = fmt.Sprintf("%s:%s@%s/%s", c.UserName, c.Password, c.Host, c.Database)
+		}
+		sess, e := mgo.Dial(mgoConnectionString)
+	*/
 	if e != nil {
 		return err.Error(packageName, modConnection, "Connect", e.Error())
 	}
@@ -43,42 +61,50 @@ func (c *Connection) Connect() error {
 }
 
 func (c *Connection) Query() db.IQuery {
-	//_ = "breakpoint"
-	q := db.NewQuery(new(Query))
-	q.SetConnection(c)
+	q := db.NewQuery(new(Query)).SetConnection(c)
+	q.SetStringSign("")
 	return q
 }
 
-func (c *Connection) Execute(stmt string, parms map[string]interface{}) (int, error) {
+func (c *Connection) Execute(stmt string, parms M) (int, error) {
 	var e error
 	sess, coll := c.CopySession(stmt)
 	defer sess.Close()
+	//sess = c.mses
 
 	//coll := c.mdb.C(stmt)
-	op := ""
+	var op DB_OP
 	ok := true
 	if val, ok := parms["operation"]; !ok {
 		return 0, err.Error(packageName, modConnection, "Execute", "Invalid operation in parms")
 	} else {
-		op = val.(string)
+		op = val.(DB_OP)
 	}
 
 	var data interface{}
-	if data, ok = parms["data"]; !ok {
+	if data, ok = parms["data"]; !ok && op != DB_DELETE {
 		return 0, err.Error(packageName, modConnection, "Execute", "Data is not valid")
 	}
 
-	if op == "insert" {
+	if op == DB_INSERT {
 		e = coll.Insert(data)
 		if e != nil {
 			return 0, err.Error(packageName, modConnection, "Execute - Insert", e.Error())
 		}
 	} else {
 		find, _ := parms["find"]
-		if op == "update" {
-			coll.Update(find, data)
-		} else if op == "delete" {
-			coll.Remove(find)
+		if op == DB_SAVE {
+			_, e = coll.Upsert(find, data)
+		} else if op == DB_UPDATE {
+			e = coll.Update(find, data)
+		} else if op == DB_DELETE {
+			_, e = coll.RemoveAll(find)
+		} else {
+			op = DB_UKNOWN
+		}
+		_ = "breakpoint"
+		if e != nil {
+			return 0, err.Error(packageName, modConnection, "Execute - "+string(op), e.Error())
 		}
 	}
 	return 0, nil
@@ -125,6 +151,7 @@ func (c *Connection) Table(tableName string, parms map[string]interface{}) db.IC
 	selectFields, hasSelectFields := parms["select"]
 	limit, hasLimit := parms["limit"]
 
+	_ = "breakpoint"
 	if hasPipe {
 		cs.mgoPipe = cs.mgoColl.Pipe(pipe).AllowDiskUse()
 		cs.Type = CursorType_Pipe
