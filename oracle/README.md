@@ -77,12 +77,6 @@ Set variable `DYLD_LIBRARY_PATH` with value is `$ORACLE_HOME`. This variable req
 export DYLD_LIBRARY_PATH=$ORACLE_HOME:$DYLD_LIBRARY_PATH
 ```
 
-Set variable `GO_OCI8_CONNECT_STRING` with value is connection string of our oracle server.
-
-```bash
-export GO_OCI8_CONNECT_STRING="scott/tiger@MY"
-```
-
 Create new file `oci8.pc`, place it at `$ORACLE_HOME/pkg`. Create the folder if it does not exists. Then fill the file with these codes.
 
 ```bash
