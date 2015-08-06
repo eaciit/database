@@ -12,7 +12,7 @@ type Query struct {
 	currentParseMode string
 }
 
-func (q *Query) parseWhere(op string, clauses []*base.QE) string {
+func (q *Query) parseWhere(op string, clauses []*base.QE, ins toolkit.M) string {
 	result := []string{}
 	sep := ""
 
@@ -26,7 +26,7 @@ func (q *Query) parseWhere(op string, clauses []*base.QE) string {
 		var clauseString string
 
 		if clause.FieldOp == base.OpAnd || clause.FieldOp == base.OpOr {
-			subWhere := q.parseWhere(clause.FieldOp, clause.Value.([]*base.QE))
+			subWhere := q.parseWhere(clause.FieldOp, clause.Value.([]*base.QE), ins)
 			clauseString = fmt.Sprintf("(%s)", subWhere)
 		} else if clause.FieldOp == base.OpEq {
 			clauseString = fmt.Sprintf("%s = %s", clause.FieldId, clause.Value.(string))
@@ -43,12 +43,38 @@ func (q *Query) parseWhere(op string, clauses []*base.QE) string {
 		} else if clause.FieldOp == base.OpIn {
 			value := strings.Join(clause.Value.([]string), ", ")
 			clauseString = fmt.Sprintf("%s in (%s)", clause.FieldId, value)
+		} else if clause.FieldOp == base.OpContains {
+			value := q.StringValue("")
+			if len(clause.Value.([]string)) > 0 {
+				value = fmt.Sprintf("%s%s%s", "%", ins.Get(clause.Value.([]string)[0], ""), "%")
+			}
+			clauseString = fmt.Sprintf("%s like %s", clause.FieldId, q.StringValue(value))
+		} else if clause.FieldOp == base.OpStartWith {
+			value := fmt.Sprintf("%s%s", ins.Get(clause.Value.(string), ""), "%")
+			clauseString = fmt.Sprintf("%s like %s", clause.FieldId, q.StringValue(value))
+		} else if clause.FieldOp == base.OpEndWith {
+			value := fmt.Sprintf("%s%s", "%", ins.Get(clause.Value.(string), ""))
+			clauseString = fmt.Sprintf("%s like %s", clause.FieldId, q.StringValue(value))
+		} else if clause.FieldOp == base.OpBetween {
+			value := []interface{}{
+				clause.FieldId,
+				clause.Value.(base.QRange).From,
+				clause.FieldId,
+				clause.Value.(base.QRange).To,
+			}
+			clauseString = fmt.Sprint("(", value[0], " >= ", value[1], " AND ", value[2], " <= ", value[3], ")")
 		}
 
 		result = append(result, clauseString)
 	}
 
-	return strings.Join(result, fmt.Sprintf(" %s ", sep))
+	parsedWhere := strings.Join(result, fmt.Sprintf(" %s ", sep))
+
+	for k, v := range ins {
+		parsedWhere = strings.Replace(parsedWhere, k, q.StringValue(v.(string)), -1)
+	}
+
+	return parsedWhere
 }
 
 func (q *Query) Parse(qe *base.QE, ins toolkit.M) interface{} {
@@ -57,10 +83,7 @@ func (q *Query) Parse(qe *base.QE, ins toolkit.M) interface{} {
 	} else if qe.FieldOp == base.OpFromTable {
 		return qe.Value
 	} else if qe.FieldOp == base.OpAnd || qe.FieldOp == base.OpOr {
-		parsedWhere := q.parseWhere(qe.FieldOp, qe.Value.([]*base.QE))
-		for k, v := range ins {
-			parsedWhere = strings.Replace(parsedWhere, k, q.StringValue(v.(string)), -1)
-		}
+		parsedWhere := q.parseWhere(qe.FieldOp, qe.Value.([]*base.QE), ins)
 		return parsedWhere
 	} else if qe.FieldOp == base.OpOrderBy {
 		parsedOrder := strings.Join(qe.Value.([]string), ", ")

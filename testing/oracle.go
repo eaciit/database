@@ -28,7 +28,11 @@ func main() {
 			base.Eq("customerid", "@2"),
 			base.And(
 				base.Eq("customerid", "@3"),
-				base.Eq("companyname", "@4")))).
+				base.Eq("companyname", "@4"))),
+		base.Contains("companyname", "@5"),
+		base.StartWith("companyname", "@6"),
+		base.EndWith("companyname", "@7"),
+		base.Between("2", 1, 5)).
 		OrderBy("companyname asc", "customerid desc")
 
 	c := q.Cursor(toolkit.M{
@@ -36,6 +40,9 @@ func main() {
 		"@2": "ANTON",
 		"@3": "ALFKI",
 		"@4": "Alfreds Futterkiste",
+		"@5": "freds",
+		"@6": "Alfreds",
+		"@7": "Futterkiste",
 	})
 	c.FetchAll(&ms, true)
 
