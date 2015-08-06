@@ -1,9 +1,10 @@
-package oracle
+package rdbms
 
 import (
 	"fmt"
 	"github.com/eaciit/database/base"
 	"github.com/eaciit/toolkit"
+	"strconv"
 	"strings"
 )
 
@@ -71,7 +72,16 @@ func (q *Query) parseWhere(op string, clauses []*base.QE, ins toolkit.M) string 
 	parsedWhere := strings.Join(result, fmt.Sprintf(" %s ", sep))
 
 	for k, v := range ins {
-		parsedWhere = strings.Replace(parsedWhere, k, q.StringValue(v.(string)), -1)
+		var value string
+
+		switch v.(type) {
+		case int:
+			value = strconv.Itoa(v.(int))
+		default:
+			value = q.StringValue(v.(string))
+		}
+
+		parsedWhere = strings.Replace(parsedWhere, k, value, -1)
 	}
 
 	return parsedWhere

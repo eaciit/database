@@ -1,6 +1,7 @@
-package oracle
+package rdbms
 
 import (
+	"database/sql"
 	"github.com/eaciit/database/base"
 	"github.com/eaciit/errorlib"
 	"github.com/eaciit/toolkit"
@@ -28,7 +29,11 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 		return createError("FetchAll", e.Error())
 	}
 
-	rowRaw, e := c.Connection.(*Connection).Sql.Query(c.QueryString)
+	session := c.Connection.(*Connection).Sql
+
+	// c.QueryString = "SELECT id, category, author_name FROM tb_post WHERE id = 375 OR id = 353 ORDER BY id asc, category desc"
+
+	rowRaw, e := session.Query(c.QueryString)
 
 	if e != nil {
 		return createError("FetchAll", e.Error())
@@ -40,17 +45,16 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 		return createError("FetchAll", e.Error())
 	}
 
-	allRows := make([]toolkit.M, 0)
+	rowDataRaw := make([]sql.RawBytes, len(columns))
+	rowMemory := make([]interface{}, len(rowDataRaw))
+	for i := range rowDataRaw {
+		rowMemory[i] = &rowDataRaw[i]
+	}
+
+	rowAll := make([]toolkit.M, 0)
 
 	for rowRaw.Next() {
-		var rowElement []interface{}
-		rowElement = append(rowElement, make([]interface{}, (len(columns)-len(rowElement)))...)
-
-		for i := range rowElement {
-			rowElement[i] = &rowElement[i]
-		}
-
-		e := rowRaw.Scan(rowElement...)
+		e := rowRaw.Scan(rowMemory...)
 
 		if e != nil {
 			return createError("FetchAll", e.Error())
@@ -58,14 +62,20 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 
 		rowData := toolkit.M{}
 
-		for i, each := range rowElement {
-			rowData.Set(columns[i], each)
+		for i, each := range rowDataRaw {
+			value := "NULL"
+
+			if each != nil {
+				value = string(each)
+			}
+
+			rowData.Set(columns[i], value)
 		}
 
-		allRows = append(allRows, rowData)
+		rowAll = append(rowAll, rowData)
 	}
 
-	*(result.(*[]toolkit.M)) = allRows
+	*(result.(*[]toolkit.M)) = rowAll
 
 	return nil
 }

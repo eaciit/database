@@ -44,7 +44,11 @@ func main() {
 		"@6": "Alfreds",
 		"@7": "Futterkiste",
 	})
-	c.FetchAll(&ms, true)
+
+	e := c.FetchAll(&ms, true)
+	if e != nil {
+		fmt.Println(e.Error())
+	}
 
 	fmt.Println("res", ms)
 }
