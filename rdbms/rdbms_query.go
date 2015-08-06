@@ -127,12 +127,12 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 		}
 
 		if settings.Has("limit") {
-			queryPart := settings.Get("limit", "").(int)
+			queryPart := settings.Get("limit", 10).(int)
 			queryString = fmt.Sprintf("%sLIMIT %d ", queryString, queryPart)
 		}
 
 		if settings.Has("skip") {
-			queryPart := settings.Get("skip", "").(int)
+			queryPart := settings.Get("skip", 0).(int)
 			queryString = fmt.Sprintf("%sOFFSET %d ", queryString, queryPart)
 		}
 	}
