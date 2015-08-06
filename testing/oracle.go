@@ -18,8 +18,25 @@ func main() {
 	conn.Connect()
 
 	ms := []toolkit.M{}
-	q := conn.Query().Select("customerid", "companyname").From("customers")
-	c := q.Cursor(toolkit.M{"@uname": "noval", "@email": "noval@eaciit.com", "@action": "system"})
+	q := conn.Query().
+		SetStringSign("'").
+		Select("customerid", "companyname").
+		From("customers").
+		Where(
+		base.Or(
+			base.Eq("customerid", "@1"),
+			base.Eq("customerid", "@2"),
+			base.And(
+				base.Eq("customerid", "@3"),
+				base.Eq("companyname", "@4")))).
+		OrderBy("companyname asc", "customerid desc")
+
+	c := q.Cursor(toolkit.M{
+		"@1": "ANATR",
+		"@2": "ANTON",
+		"@3": "ALFKI",
+		"@4": "Alfreds Futterkiste",
+	})
 	c.FetchAll(&ms, true)
 
 	fmt.Println("res", ms)
