@@ -30,9 +30,6 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 	}
 
 	session := c.Connection.(*Connection).Sql
-
-	// c.QueryString = "SELECT id, category, author_name FROM tb_post WHERE id = 375 OR id = 353 ORDER BY id asc, category desc"
-
 	rowRaw, e := session.Query(c.QueryString)
 
 	if e != nil {
