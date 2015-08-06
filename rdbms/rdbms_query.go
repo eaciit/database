@@ -88,8 +88,10 @@ func (q *Query) parseWhere(op string, clauses []*base.QE, ins toolkit.M) string 
 }
 
 func (q *Query) Parse(qe *base.QE, ins toolkit.M) interface{} {
-
-	if qe.FieldOp == base.OpOrderBy {
+	if qe.FieldOp == base.OpSelect {
+		parsedSelect := strings.Join(qe.Value.([]string), ", ")
+		return parsedSelect
+	} else if qe.FieldOp == base.OpOrderBy {
 		parsedOrder := strings.Join(qe.Value.([]string), ", ")
 		return parsedOrder
 	} else if qe.FieldOp == base.OpAnd || qe.FieldOp == base.OpOr {
@@ -107,7 +109,7 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 
 	if commandType == base.DB_SELECT {
 		if settings.Has("select") {
-			queryPart := strings.Join(settings.Get("select", []string{}).([]string), ", ")
+			queryPart := settings.Get("select", "").(string)
 			queryString = fmt.Sprintf("%sSELECT %s ", queryString, queryPart)
 		}
 
