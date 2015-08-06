@@ -11,6 +11,7 @@ type ICursor interface {
 	FetchAll(interface{}, bool) error
 	Count() int
 	Close()
+	GetQueryString() string
 }
 
 type CursorSourceType int
@@ -23,6 +24,7 @@ const (
 type CursorBase struct {
 	CursorSource CursorSourceType
 	Connection   IConnection
+	QueryString  string
 }
 
 func (i *CursorBase) Fetch(result interface{}) (bool, error) {
@@ -46,4 +48,8 @@ func (c *CursorBase) Count() int {
 }
 
 func (c *CursorBase) Close() {
+}
+
+func (c *CursorBase) GetQueryString() string {
+	return c.QueryString
 }

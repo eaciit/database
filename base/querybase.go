@@ -104,13 +104,10 @@ func (q *QueryBase) From(tablename string) IQuery {
 }
 
 func (q *QueryBase) Where(qes ...*QE) IQuery {
-	if len(qes) == 1 {
-		q.addQE("where", qes[0])
-		//result.Data = q.Q().Parse(qes[0], ins)
-	} else if len(qes) > 1 {
-		newqs := And(qes...)
-		q.addQE("where", newqs)
-	}
+	// return as array even only one query
+	// because this will become a problem
+	// for rdbms
+	q.addQE("where", And(qes...))
 	return q
 }
 

@@ -9,7 +9,6 @@ import (
 
 type Cursor struct {
 	base.CursorBase
-	QueryString string
 }
 
 func createError(title string, message string) error {

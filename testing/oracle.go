@@ -9,15 +9,14 @@ import (
 
 var conn base.IConnection
 
-func test(a interface{}) {
-	*(a.(*string)) = "Asdfasdf"
+func main() {
+	conn = oracle.NewConnection("192.168.0.210:1521", "scott", "tiger", "ORCL/orcl.eaciit.local")
+	conn.Connect()
+	testSelectFromWhereOrder()
+	conn.Close()
 }
 
-func main() {
-	conn := oracle.NewConnection("192.168.0.210:1521", "scott", "tiger", "ORCL/orcl.eaciit.local")
-	conn.Connect()
-
-	ms := []toolkit.M{}
+func testSelectFromWhereOrder() {
 	q := conn.Query().
 		SetStringSign("'").
 		Select("customerid", "companyname").
@@ -34,7 +33,6 @@ func main() {
 		base.EndWith("companyname", "@7"),
 		base.Between("2", 1, 5)).
 		OrderBy("companyname asc", "customerid desc")
-
 	c := q.Cursor(toolkit.M{
 		"@1": "ANATR",
 		"@2": "ANTON",
@@ -44,11 +42,16 @@ func main() {
 		"@6": "Alfreds",
 		"@7": "Futterkiste",
 	})
+	r := []toolkit.M{}
+	e := c.FetchAll(&r, true)
 
-	e := c.FetchAll(&ms, true)
 	if e != nil {
 		fmt.Println(e.Error())
 	}
 
-	fmt.Println("res", ms)
+	fmt.Println(c.GetQueryString())
+
+	for _, each := range r {
+		fmt.Println(each)
+	}
 }

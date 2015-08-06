@@ -88,48 +88,55 @@ func (q *Query) parseWhere(op string, clauses []*base.QE, ins toolkit.M) string 
 }
 
 func (q *Query) Parse(qe *base.QE, ins toolkit.M) interface{} {
-	if qe.FieldOp == base.OpSelect {
-		return qe.Value
-	} else if qe.FieldOp == base.OpFromTable {
-		return qe.Value
+
+	if qe.FieldOp == base.OpOrderBy {
+		parsedOrder := strings.Join(qe.Value.([]string), ", ")
+		return parsedOrder
 	} else if qe.FieldOp == base.OpAnd || qe.FieldOp == base.OpOr {
 		parsedWhere := q.parseWhere(qe.FieldOp, qe.Value.([]*base.QE), ins)
 		return parsedWhere
-	} else if qe.FieldOp == base.OpOrderBy {
-		parsedOrder := strings.Join(qe.Value.([]string), ", ")
-		return parsedOrder
 	}
 
 	return qe.Value
 }
 
 func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
-	s := q.Settings()
-	qs := ""
+	settings := q.Settings()
+	commandType := q.CommandType(settings)
+	queryString := ""
 
-	if s.Has("select") {
-		queryPart := strings.Join(s.Get("select", []string{}).([]string), ", ")
-		qs = fmt.Sprintf("%sSELECT %s ", qs, queryPart)
+	if commandType == base.DB_SELECT {
+		if settings.Has("select") {
+			queryPart := strings.Join(settings.Get("select", []string{}).([]string), ", ")
+			queryString = fmt.Sprintf("%sSELECT %s ", queryString, queryPart)
+		}
+
+		if settings.Has("from") {
+			queryPart := settings.Get("from", "").(string)
+			queryString = fmt.Sprintf("%sFROM %s ", queryString, queryPart)
+		}
+
+		if settings.Has("where") {
+			queryPart := settings.Get("where", "").(string)
+			queryString = fmt.Sprintf("%sWHERE %s ", queryString, queryPart)
+		}
+
+		if settings.Has("orderby") {
+			queryPart := settings.Get("orderby", "").(string)
+			queryString = fmt.Sprintf("%sORDER BY %s ", queryString, queryPart)
+		}
+
+		if settings.Has("limit") {
+			queryPart := settings.Get("limit", "").(int)
+			queryString = fmt.Sprintf("%sLIMIT %d ", queryString, queryPart)
+		}
+
+		if settings.Has("skip") {
+			queryPart := settings.Get("skip", "").(int)
+			queryString = fmt.Sprintf("%sOFFSET %d ", queryString, queryPart)
+		}
 	}
 
-	if s.Has("from") {
-		queryPart := s.Get("from", "").(string)
-		qs = fmt.Sprintf("%sFROM %s ", qs, queryPart)
-	}
-
-	if s.Has("where") {
-		queryPart := s.Get("where", "").(string)
-		qs = fmt.Sprintf("%sWHERE %s ", qs, queryPart)
-	}
-
-	if s.Has("orderby") {
-		queryPart := s.Get("orderby", "").(string)
-		qs = fmt.Sprintf("%sORDER BY %s ", qs, queryPart)
-	}
-
-	fmt.Println(qs)
-
-	cursor := q.Connection.Table(qs, nil)
-
+	cursor := q.Connection.Table(queryString, nil)
 	return cursor, 0, nil
 }

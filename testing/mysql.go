@@ -10,29 +10,33 @@ import (
 var conn base.IConnection
 
 func main() {
-	conn := mysql.NewConnection("localhost", "root", "", "db_muslimorid")
+	conn = mysql.NewConnection("localhost", "root", "", "db_muslimorid")
 	conn.Connect()
+	testSelectFromWhereOrderLimitOffset()
+	conn.Close()
+}
 
-	ms := []toolkit.M{}
+func testSelectFromWhereOrderLimitOffset() {
 	q := conn.Query().
 		SetStringSign("'").
 		Select("id", "category", "author_name").
 		From("tb_post").
-		Where(
-		base.Or(
-			base.Eq("id", "@1"),
-			base.Eq("id", "@2"))).
-		OrderBy("id asc", "category desc")
+		Where(base.Lte("id", "@1")).
+		// Where(base.Or(base.Lte("id", "@1"))).
+		OrderBy("id asc").
+		Limit(3).
+		Skip(100)
+	c := q.Cursor(toolkit.M{"@1": 373})
+	r := []toolkit.M{}
+	e := c.FetchAll(&r, true)
 
-	c := q.Cursor(toolkit.M{
-		"@1": 375,
-		"@2": 353,
-	})
-
-	e := c.FetchAll(&ms, true)
 	if e != nil {
 		fmt.Println(e.Error())
 	}
 
-	fmt.Println("res", ms)
+	fmt.Println(c.GetQueryString())
+
+	for _, each := range r {
+		fmt.Println(each)
+	}
 }
