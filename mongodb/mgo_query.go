@@ -116,7 +116,7 @@ func mapEither(m1 M, m2 M, element string) (interface{}, bool) {
 func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 	var e error
 	s := q.Settings()
-	tableName := s.Get("from", "").(string)
+	tableName := s.Get("from", "").([]string)[0]
 	if tableName == "" {
 		return nil, nil, errorlib.Error(packageName, modQuery, "Run", "No table / data source name specified")
 	}

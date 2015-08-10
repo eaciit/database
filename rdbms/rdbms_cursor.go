@@ -49,6 +49,8 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 
 	rowAll := make([]toolkit.M, 0)
 
+	defer rowRaw.Close()
+
 	for rowRaw.Next() {
 		e := rowRaw.Scan(rowMemory...)
 
@@ -73,5 +75,5 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 
 	*(result.(*[]toolkit.M)) = rowAll
 
-	return nil
+	return rowRaw.Err()
 }

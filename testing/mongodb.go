@@ -30,7 +30,7 @@ func main() {
 		Limit(5).
 		Where(Eq("WellName", "@val")).
 		From("WEISWellActivities")
-	c := q.Cursor(M{"@val": "WEISWellActivities"})
+	c := q.Cursor(M{"@val": "Helix Q-4000"})
 	e := c.FetchAll(&ms, true)
 	if e != nil {
 		fmt.Printf("Error fetch => %s \n", e.Error())

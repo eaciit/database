@@ -24,7 +24,7 @@ type IQuery interface {
 	OrderBy(...string) IQuery
 	GroupBy(...string) IQuery
 	Aggregate(...*QE) IQuery
-	From(string) IQuery
+	From(...string) IQuery
 	Limit(int) IQuery
 	Skip(int) IQuery
 	//Command(string, *QE) IQuery
@@ -98,8 +98,8 @@ func (q *QueryBase) Aggregate(aggregates ...*QE) IQuery {
 	return q
 }
 
-func (q *QueryBase) From(tablename string) IQuery {
-	q.addQE("from", &QE{"", OpFromTable, tablename})
+func (q *QueryBase) From(tablenames ...string) IQuery {
+	q.addQE("from", &QE{"", OpFromTable, tablenames})
 	return q
 }
 

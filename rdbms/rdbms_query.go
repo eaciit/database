@@ -95,6 +95,9 @@ func (q *Query) Parse(qe *base.QE, ins toolkit.M) interface{} {
 	} else if qe.FieldOp == base.OpOrderBy {
 		parsedOrder := strings.Join(qe.Value.([]string), ", ")
 		return parsedOrder
+	} else if qe.FieldOp == base.OpFromTable {
+		parsedTable := strings.Join(qe.Value.([]string), ", ")
+		return parsedTable
 	} else if qe.FieldOp == base.OpAnd || qe.FieldOp == base.OpOr {
 		parsedWhere := q.parseWhere(qe.FieldOp, qe.Value.([]*base.QE), ins)
 		return parsedWhere
