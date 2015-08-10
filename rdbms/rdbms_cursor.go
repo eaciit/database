@@ -12,7 +12,7 @@ type Cursor struct {
 }
 
 func createError(title string, message string) error {
-	return errorlib.Error(packageName, modCursor, "validate", "Invalid Query or Pipe Object")
+	return errorlib.Error(packageName, modCursor, title, message)
 }
 
 func (c *Cursor) validate() error {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/eaciit/database/base"
 	"github.com/eaciit/toolkit"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -126,6 +127,14 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 		if settings.Has("orderby") {
 			queryPart := settings.Get("orderby", "").(string)
 			queryString = fmt.Sprintf("%sORDER BY %s ", queryString, queryPart)
+		}
+
+		if q.Connection.(*Connection).Driver == "oci8" {
+			if settings.Has("limit") || settings.Has("skip") {
+				e := createError("Compile", "Limit & Offset currently is not support on oracle driver")
+				fmt.Println(e.Error())
+				os.Exit(0)
+			}
 		}
 
 		if settings.Has("limit") {
