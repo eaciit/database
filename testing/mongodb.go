@@ -24,13 +24,16 @@ func main() {
 	connect()
 	defer Close()
 
-	ms := make([]M, 0)
-	q := conn.Query().SetStringSign("\"").
-		Select("RigType", "RigName").
-		Limit(5).
+	ms := []M{}
+	q := conn.Query().
+		//SetStringSign("\"").
+		Select("RigType", "RigName", "WellName").
+		From("WEISWellActivities").
 		Where(Eq("WellName", "@val")).
-		From("WEISWellActivities")
-	c := q.Cursor(M{"@val": "Helix Q-4000"})
+		Limit(5)
+	//c := q.Cursor(M{"@val": "Helix Q-4000"})
+	c := q.Cursor(M{"@val": "PRINCESS P8"})
+	fmt.Printf("Got %d record(s) \n", c.Count())
 	e := c.FetchAll(&ms, true)
 	if e != nil {
 		fmt.Printf("Error fetch => %s \n", e.Error())
