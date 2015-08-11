@@ -14,6 +14,7 @@ var conn IConnection
 func connect() {
 	if conn == nil {
 		conn = NewConnection("localhost:27888", "", "", "ecanadarko")
+		_ = "breakpoint"
 		e := conn.Connect()
 		if e != nil {
 			fmt.Println("Unable to connect " + e.Error())
@@ -24,7 +25,6 @@ func connect() {
 func TestSimpleQuery(t *testing.T) {
 	connect()
 	defer Close()
-	t.Skip()
 
 	fmt.Print("Test Simple Query")
 	ms := make([]M, 0)
@@ -48,7 +48,6 @@ func TestAggregate(t *testing.T) {
 	var e error
 	connect()
 	defer Close()
-	t.Skip()
 
 	fmt.Print("Test Aggregate")
 	ms := []struct {
@@ -74,7 +73,6 @@ func TestAggregate(t *testing.T) {
 func TestQueryWithParam(t *testing.T) {
 	connect()
 	defer Close()
-	t.Skip()
 
 	fmt.Print("Test Query With Param")
 	ms := make([]M, 0)
@@ -133,7 +131,7 @@ func TestUpdate(t *testing.T) {
 func TestDelete(t *testing.T) {
 	connect()
 	defer Close()
-	t.Skip()
+
 	fmt.Print("Test Delete	")
 	datas := []M{}
 	qget := conn.Query().From("TestTable").Where(Eq("_id", "@id"))
