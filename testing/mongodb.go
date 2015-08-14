@@ -31,6 +31,7 @@ func main() {
 		From("WEISWellActivities").
 		Where(Eq("WellName", "@val")).
 		Limit(5)
+
 	//c := q.Cursor(M{"@val": "Helix Q-4000"})
 	c := q.Cursor(M{"@val": "PRINCESS P8"})
 	fmt.Printf("Got %d record(s) \n", c.Count())
