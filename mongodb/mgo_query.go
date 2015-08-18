@@ -210,25 +210,38 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 		sess, mgoColl := q.Connection.(*Connection).CopySession(tableName)
 		defer sess.Close()
 
+		//_ = "breakpoint"
+		hasIdField := false
 		if hasData {
+			//_ = "breakpoint"
 			idField := Id(data)
-			hasIdField := idField != nil
+			hasIdField = idField != nil
 			if hasIdField {
 				hasFind = true
 				find = M{"_id": idField}
 			}
 		}
 
+		multi := true
 		if !hasFind {
 			find = M{}
+			multi = !hasIdField
 		}
 
 		if commandType == DB_INSERT {
 			e = mgoColl.Insert(data)
 		} else if commandType == DB_UPDATE {
-			e = mgoColl.Update(find, data)
+			if multi {
+				_, e = mgoColl.UpdateAll(find, data)		
+			} else {
+				e = mgoColl.Update(find, data)
+			}
 		} else if commandType == DB_DELETE {
-			e = mgoColl.Remove(find)
+			if multi {
+				_, e = mgoColl.RemoveAll(find)
+			} else {
+				e = mgoColl.Remove(find)
+			}
 		} else if commandType == DB_SAVE {
 			//_ = "breakpoint"
 			_, e = mgoColl.Upsert(find, data)

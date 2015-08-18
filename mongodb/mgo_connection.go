@@ -102,7 +102,7 @@ func (c *Connection) Execute(stmt string, parms M) (int, error) {
 		} else {
 			op = DB_UKNOWN
 		}
-		_ = "breakpoint"
+		//_ = "breakpoint"
 		if e != nil {
 			return 0, err.Error(packageName, modConnection, "Execute - "+string(op), e.Error())
 		}
@@ -151,7 +151,7 @@ func (c *Connection) Table(tableName string, parms map[string]interface{}) db.IC
 	selectFields, hasSelectFields := parms["select"]
 	limit, hasLimit := parms["limit"]
 
-	_ = "breakpoint"
+	//_ = "breakpoint"
 	if hasPipe {
 		cs.mgoPipe = cs.mgoColl.Pipe(pipe).AllowDiskUse()
 		cs.Type = CursorType_Pipe
