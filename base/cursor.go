@@ -12,6 +12,9 @@ type ICursor interface {
 	Count() int
 	Close()
 	GetQueryString() string
+	
+	Error() string
+	SetError(string)
 }
 
 type CursorSourceType int
@@ -25,6 +28,16 @@ type CursorBase struct {
 	CursorSource CursorSourceType
 	Connection   IConnection
 	QueryString  string
+	
+	errorTxt string
+}
+
+func (c *CursorBase) Error() string{
+	return c.errorTxt
+}
+
+func (c *CursorBase) SetError(t string){
+	c.errorTxt = t
 }
 
 func (i *CursorBase) Fetch(result interface{}) (bool, error) {
