@@ -110,6 +110,7 @@ func (c *Connection) Execute(stmt string, parms M) (int, error) {
 	return 0, nil
 }
 
+/*
 func (c *Connection) Command(cmdText string, settings map[string]interface{}) *Command {
 	cmd := new(Command)
 	cmd.Connection = c
@@ -129,6 +130,7 @@ func (c *Connection) Adapter(tableName string) db.IAdapter {
 	a.SetCommand(db.DB_SAVE, c.Command(tableName, nil))
 	return a
 }
+*/
 
 func sel(q ...string) (r M) {
 	r = make(M, len(q))

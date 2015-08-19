@@ -13,7 +13,7 @@ var conn IConnection
 
 func connect() {
 	if conn == nil {
-		conn = NewConnection("localhost:27888", "", "", "ecanadarko")
+		conn = NewConnection("localhost:27123", "", "", "ecanadarko")
 		_ = "breakpoint"
 		e := conn.Connect()
 		if e != nil {

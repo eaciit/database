@@ -1,5 +1,6 @@
 package base
 
+/*
 import (
 	//"github.com/eaciit/errorlib"
 	. "github.com/eaciit/toolkit"
@@ -32,3 +33,4 @@ func (c *CommandBase) Prop(fieldname string, result interface{}) {
 		c.Settings = result.(map[string]interface{})
 	}
 }
+*/

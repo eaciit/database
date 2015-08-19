@@ -3,15 +3,18 @@ package database
 import (
 	"fmt"
 	"github.com/eaciit/database/base"
-	_ "github.com/eaciit/database/mongodb"
+	"github.com/eaciit/database/mongodb"
 	"strings"
 	"testing"
 )
 
-func connect() base.IConnection {
+func connect() (base.IConnection, error) {
 	conn := mongodb.NewConnection("localhost:27123", "", "", "ectest")
 	e := conn.Connect()
-	return conn
+	if e != nil {
+		return nil, e
+	}
+	return conn, nil
 }
 
 type UserModel struct {
@@ -62,12 +65,9 @@ func TestAdapter(t *testing.T) {
 	}
 	defer conn.Close()
 
-	a := conn.Adapter("Users")
-	cursor, _, e := a.Run(base.DB_SELECT, nil, nil)
-	if e != nil {
-		t.Error(fmt.Sprintf("%s \n", e.Error()))
-		return
-	}
+	//a := conn.Adapter("Users")
+	//cursor, _, e := a.Run(base.DB_SELECT, nil, nil)
+	cursor := conn.Table("ORMUsers", nil)
 	defer cursor.Close()
 	u := new(UserModel)
 	ok, _ := cursor.Fetch(u)
@@ -81,12 +81,12 @@ func TestAdapter(t *testing.T) {
 
 			if strings.Contains(u.FullName, "1") == true {
 				u.FullName = "Employee 1 Name"
-				a.Run(base.DB_SAVE, u, nil)
+				//conn.Execute()
 			}
 
 			if strings.Contains(u.FullName, "Name") == false {
 				u.FullName = u.Id + "'s Name"
-				a.Run(base.DB_UPDATE, u, nil)
+				//a.Run(base.DB_UPDATE, u, nil)
 			}
 			fmt.Printf("%d => %v \n", idx, u)
 		}

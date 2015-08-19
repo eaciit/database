@@ -1,5 +1,6 @@
 package base
 
+/*
 import (
 	"github.com/eaciit/errorlib"
 	_ "strings"
@@ -66,3 +67,4 @@ func (a *AdapterBase) Run(commandType DB_OP, result interface{}, parms map[strin
 	}
 	return cmd.Run(result, parms)
 }
+*/

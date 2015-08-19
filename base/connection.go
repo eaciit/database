@@ -11,7 +11,7 @@ type IConnection interface {
 	Execute(string, M) (int, error)
 	Query() IQuery
 	Table(string, map[string]interface{}) ICursor
-	Adapter(string) IAdapter
+	//Adapter(string) IAdapter
 	Close()
 }
 
@@ -33,9 +33,11 @@ func (c *ConnectionBase) Connect() error {
 func (c *ConnectionBase) Close() {
 }
 
+/*
 func (i *ConnectionBase) Adapter(tablename string) IAdapter {
 	return new(AdapterBase)
 }
+*/
 
 func (c *ConnectionBase) Query() IQuery {
 	return NewQuery(new(QueryBase))

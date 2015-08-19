@@ -1,5 +1,6 @@
 package mongodb
 
+/*
 import (
 	"github.com/eaciit/database/base"
 	"github.com/eaciit/errorlib"
@@ -99,3 +100,4 @@ func (c *Command) Run(data interface{}, parms toolkit.M) (base.ICursor, int, err
 	}
 	return nil, 0, nil
 }
+*/

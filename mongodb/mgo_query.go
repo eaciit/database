@@ -222,17 +222,17 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 			}
 		}
 
-		multi := true
+		multi := false
 		if !hasFind {
 			find = M{}
-			multi = !hasIdField
+			multi = !hasIdField && commandType == DB_DELETE
 		}
 
 		if commandType == DB_INSERT {
 			e = mgoColl.Insert(data)
 		} else if commandType == DB_UPDATE {
 			if multi {
-				_, e = mgoColl.UpdateAll(find, data)		
+				_, e = mgoColl.UpdateAll(find, data)
 			} else {
 				e = mgoColl.Update(find, data)
 			}
