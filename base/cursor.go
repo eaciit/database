@@ -46,8 +46,7 @@ func (i *CursorBase) Fetch(result interface{}) (bool, error) {
 }
 
 func (i *CursorBase) FetchClose(result interface{}) (bool, error) {
-	defer i.Close()
-	return false, errorlib.Error("database", "CursorBase", "Fetch", "Not yet implemented")
+	return false, errorlib.Error("database", "CursorBase", "FetchClose", "Not yet implemented")
 }
 
 func (i *CursorBase) FetchN(nCount int, result interface{}, closeCursor bool) (int, error) {

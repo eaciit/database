@@ -69,7 +69,9 @@ type QRange struct {
 }
 
 func Eq(field string, value interface{}) *QE {
-	return &QE{field, OpEq, value}
+	////_ = "breakpoint"
+	qe := QE{field, OpEq, value}
+	return &qe
 }
 
 func Ne(field string, value interface{}) *QE {

@@ -153,7 +153,7 @@ func (c *Connection) Table(tableName string, parms map[string]interface{}) db.IC
 	selectFields, hasSelectFields := parms["select"]
 	limit, hasLimit := parms["limit"]
 
-	//_ = "breakpoint"
+	_ = "breakpoint"
 	if hasPipe {
 		cs.mgoPipe = cs.mgoColl.Pipe(pipe).AllowDiskUse()
 		cs.Type = CursorType_Pipe

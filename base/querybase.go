@@ -202,6 +202,7 @@ func (q *QueryBase) Build(ins M) error {
 		for k, v := range q.Elements {
 			m[k] = q.Q().Parse(v, ins)
 		}
+		//_ = "breakpoint"
 		q.settings = m
 	}
 	return nil
@@ -240,6 +241,7 @@ func (q *QueryBase) StringValue(v interface{}) string {
 }
 
 func (q *QueryBase) ParseValue(o interface{}, m M) interface{} {
+	//_ = "breakpoint"
 	ref := reflect.ValueOf(o)
 	if !ref.IsValid() {
 		return nil
@@ -257,7 +259,7 @@ func (q *QueryBase) ParseValue(o interface{}, m M) interface{} {
 			return nil
 		}
 	}
-	return nil
+	return o
 }
 
 func (q *QueryBase) Parse(qe *QE, ins M) interface{} {
@@ -324,6 +326,7 @@ func (q *QueryBase) Compile(ins M) (ICursor, interface{}, error) {
 }
 
 func (q *QueryBase) Cursor(params M) ICursor {
+	//_ = "breakpoint"
 	c, _, _ := q.q.Run(params)
 	return c
 }

@@ -67,6 +67,12 @@ func (c *Cursor) ResetFetch() error {
 	return nil
 }
 
+func (c *Cursor) FetchClose(result interface{}) (bool, error) {
+	defer c.Close()
+	b, e := c.Fetch(result)
+	return b, e
+}
+
 func (c *Cursor) Fetch(result interface{}) (bool, error) {
 	var e error
 	e = c.validate()

@@ -19,7 +19,7 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 
 	//-- field
 	if qe.FieldOp == OpSelect {
-		//_ = "breakpoint"
+		////_ = "breakpoint"
 		return qe.Value
 	} else if qe.FieldOp == OpSetfield {
 		return qe.Value
@@ -32,7 +32,9 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 
 	//--- where
 	if qe.FieldOp == OpEq {
-		result.Set(qe.FieldId, q.ParseValue(qe.Value, ins))
+		//_ = "breakpoint"
+		value := q.ParseValue(qe.Value, ins)
+		result.Set(qe.FieldId, value)
 	} else if qe.FieldOp == OpNe {
 		result.Set(qe.FieldId, M{}.Set("$ne", q.ParseValue(qe.Value, ins)))
 	} else if qe.FieldOp == OpGt {
@@ -75,7 +77,7 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 			}
 			aggrs.Set(strings.Replace(qe.FieldOp, "$", "", -1)+"_"+qe.FieldId, m_aggr)
 		}
-		//_ = "breakpoint"
+		////_ = "breakpoint"
 		return aggrs
 	} else
 	//--- Skip & Limit
@@ -95,6 +97,7 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 		ms := make([]M, 0)
 		for _, v = range qe.Value.([]*QE) {
 			ms = append(ms, q.Parse(v, ins).(M))
+			//_ = "breakpoint"
 		}
 		result.Set("$and", ms)
 	} else {
@@ -142,6 +145,7 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 
 		// if not available then read it from settings
 		cursorParm := M{}
+		////_ = "breakpoint"
 		if s.Has("where") {
 			cursorParm["find"] = s.Get("where", nil)
 		}
@@ -210,10 +214,10 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 		sess, mgoColl := q.Connection.(*Connection).CopySession(tableName)
 		defer sess.Close()
 
-		//_ = "breakpoint"
+		////_ = "breakpoint"
 		hasIdField := false
 		if hasData {
-			//_ = "breakpoint"
+			////_ = "breakpoint"
 			idField := Id(data)
 			hasIdField = idField != nil
 			if hasIdField {
@@ -243,7 +247,7 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 				e = mgoColl.Remove(find)
 			}
 		} else if commandType == DB_SAVE {
-			//_ = "breakpoint"
+			////_ = "breakpoint"
 			_, e = mgoColl.Upsert(find, data)
 			if e == nil {
 				return nil, 0, nil
