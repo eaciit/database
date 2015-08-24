@@ -7,12 +7,13 @@ import (
 type ICursor interface {
 	ResetFetch() error
 	Fetch(interface{}) (bool, error)
+	FetchClose(interface{}) (bool, error)
 	FetchN(int, interface{}, bool) (int, error)
 	FetchAll(interface{}, bool) error
 	Count() int
 	Close()
 	GetQueryString() string
-	
+
 	Error() string
 	SetError(string)
 }
@@ -28,19 +29,24 @@ type CursorBase struct {
 	CursorSource CursorSourceType
 	Connection   IConnection
 	QueryString  string
-	
+
 	errorTxt string
 }
 
-func (c *CursorBase) Error() string{
+func (c *CursorBase) Error() string {
 	return c.errorTxt
 }
 
-func (c *CursorBase) SetError(t string){
+func (c *CursorBase) SetError(t string) {
 	c.errorTxt = t
 }
 
 func (i *CursorBase) Fetch(result interface{}) (bool, error) {
+	return false, errorlib.Error("database", "CursorBase", "Fetch", "Not yet implemented")
+}
+
+func (i *CursorBase) FetchClose(result interface{}) (bool, error) {
+	defer i.Close()
 	return false, errorlib.Error("database", "CursorBase", "Fetch", "Not yet implemented")
 }
 
