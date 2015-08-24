@@ -1,6 +1,7 @@
 package mongodb
 
 import (
+	//"fmt"
 	"github.com/eaciit/database/base"
 	"github.com/eaciit/errorlib"
 	"gopkg.in/mgo.v2"

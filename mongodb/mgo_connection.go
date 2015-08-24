@@ -140,7 +140,7 @@ func sel(q ...string) (r M) {
 	return
 }
 
-func (c *Connection) Table(tableName string, parms map[string]interface{}) db.ICursor {
+func (c *Connection) Table(tableName string, parms M) db.ICursor {
 	cs := new(Cursor)
 	cs.CursorSource = db.CursorTable
 	cs.Connection = c
@@ -153,7 +153,7 @@ func (c *Connection) Table(tableName string, parms map[string]interface{}) db.IC
 	selectFields, hasSelectFields := parms["select"]
 	limit, hasLimit := parms["limit"]
 
-	_ = "breakpoint"
+	//_ = "breakpoint"
 	if hasPipe {
 		cs.mgoPipe = cs.mgoColl.Pipe(pipe).AllowDiskUse()
 		cs.Type = CursorType_Pipe

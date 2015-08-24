@@ -10,7 +10,7 @@ type IConnection interface {
 	Connect() error
 	Execute(string, M) (int, error)
 	Query() IQuery
-	Table(string, map[string]interface{}) ICursor
+	Table(string, M) ICursor
 	//Adapter(string) IAdapter
 	Close()
 }
@@ -22,7 +22,7 @@ type ConnectionBase struct {
 	Database string
 }
 
-func (c *ConnectionBase) Execute(stmt string, parms map[string]interface{}) (int, error) {
+func (c *ConnectionBase) Execute(stmt string, parms M) (int, error) {
 	return 0, err.Error(packageName, modConnection, "Execute", err.NotYetImplemented)
 }
 
@@ -43,6 +43,6 @@ func (c *ConnectionBase) Query() IQuery {
 	return NewQuery(new(QueryBase))
 }
 
-func (c *ConnectionBase) Table(tableName string, parms map[string]interface{}) ICursor {
+func (c *ConnectionBase) Table(tableName string, parms M) ICursor {
 	return new(CursorBase)
 }
