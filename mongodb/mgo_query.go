@@ -1,7 +1,7 @@
 package mongodb
 
 import (
-	_ "fmt"
+	"fmt"
 	. "github.com/eaciit/database/base"
 	"github.com/eaciit/errorlib"
 	. "github.com/eaciit/toolkit"
@@ -45,6 +45,11 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 		result.Set(qe.FieldId, M{}.Set("$lt", q.ParseValue(qe.Value, ins)))
 	} else if qe.FieldOp == OpLte {
 		result.Set(qe.FieldId, M{}.Set("$lte", q.ParseValue(qe.Value, ins)))
+	} else if qe.FieldOp == OpIn {
+		result.Set(qe.FieldId, M{}.Set("$in", qe.Value))
+		//fmt.Printf("value:%v\nresult:\n%v\n", JsonString(qe.Value), JsonString(result))
+	} else if qe.FieldOp == OpNin {
+		result.Set(qe.FieldId, M{}.Set("$nin", qe.Value))
 	} else
 
 	//--- Aggregate
@@ -121,7 +126,8 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 	s := q.Settings()
 	tableName := s.Get("from", "").([]string)[0]
 	if tableName == "" {
-		return nil, nil, errorlib.Error(packageName, modQuery, "Run", "No table / data source name specified")
+		return nil, nil, errorlib.Error(packageName, modQuery, "Run",
+			fmt.Sprint("No table / data source name specified"))
 	}
 
 	if ins == nil {

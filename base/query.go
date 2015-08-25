@@ -29,6 +29,7 @@ const (
 	OpLt           = "$lt"
 	OpBetween      = "$between"
 	OpIn           = "$in"
+	OpNin          = "$nin"
 	OpContains     = "$contains"
 	OpStartWith    = "$startwith"
 	OpEndWith      = "$endwith"
