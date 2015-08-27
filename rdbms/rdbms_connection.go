@@ -35,19 +35,11 @@ func (c *Connection) Execute(stmt string, parms toolkit.M) (int, error) {
 	return 0, nil
 }
 
-func (c *Connection) Command(cmdText string, settings map[string]interface{}) *base.CommandBase {
-	return nil
-}
-
-func (c *Connection) Adapter(tableName string) base.IAdapter {
-	return nil
-}
-
 func sel(q ...string) (r toolkit.M) {
 	return nil
 }
 
-func (c *Connection) Table(tableName string, parms map[string]interface{}) base.ICursor {
+func (c *Connection) Table(tableName string, parms toolkit.M) base.ICursor {
 	cs := new(Cursor)
 	cs.QueryString = tableName
 	cs.Connection = c

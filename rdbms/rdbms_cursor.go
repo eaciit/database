@@ -9,6 +9,7 @@ import (
 
 type Cursor struct {
 	base.CursorBase
+	rows *sql.Rows
 }
 
 func createError(title string, message string) error {
@@ -30,12 +31,13 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 
 	session := c.Connection.(*Connection).Sql
 	rowRaw, e := session.Query(c.QueryString)
+	c.rows = rowRaw
 
 	if e != nil {
 		return createError("FetchAll", e.Error())
 	}
 
-	columns, e := rowRaw.Columns()
+	columns, e := c.rows.Columns()
 
 	if e != nil {
 		return createError("FetchAll", e.Error())
@@ -49,10 +51,10 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 
 	rowAll := make([]toolkit.M, 0)
 
-	defer rowRaw.Close()
+	defer c.rows.Close()
 
-	for rowRaw.Next() {
-		e := rowRaw.Scan(rowMemory...)
+	for c.rows.Next() {
+		e := c.rows.Scan(rowMemory...)
 
 		if e != nil {
 			return createError("FetchAll", e.Error())
@@ -75,5 +77,20 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 
 	*(result.(*[]toolkit.M)) = rowAll
 
-	return rowRaw.Err()
+	return c.rows.Err()
 }
+
+// func (c *Cursor) ResetFetch() error {
+// }
+
+// func (c *Cursor) FetchClose(result interface{}) (bool, error) {
+// }
+
+// func (c *Cursor) Fetch(result interface{}) (bool, error) {
+// }
+
+// func (c *Cursor) Count() int {
+// }
+
+// func (c *Cursor) Close() {
+// }
