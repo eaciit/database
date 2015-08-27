@@ -66,7 +66,7 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 	}
 
 	rowAll := make([]toolkit.M, 0)
-	defer c.FetchClose()
+	defer c.Close()
 
 	for {
 		rowData := toolkit.M{}
