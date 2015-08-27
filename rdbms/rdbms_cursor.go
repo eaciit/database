@@ -9,7 +9,10 @@ import (
 
 type Cursor struct {
 	base.CursorBase
-	rows *sql.Rows
+	rows       *sql.Rows
+	columns    []string
+	rowMemory  []interface{}
+	rowDataRaw []sql.RawBytes
 }
 
 func createError(title string, message string) error {
@@ -24,23 +27,26 @@ func (c *Cursor) validate() error {
 	return nil
 }
 
-func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
+func (c *Cursor) prepareFetch() error {
 	if e := c.validate(); e != nil {
-		return createError("FetchAll", e.Error())
+		return createError("prepareFetch", e.Error())
 	}
 
 	session := c.Connection.(*Connection).Sql
 	rowRaw, e := session.Query(c.QueryString)
-	c.rows = rowRaw
 
 	if e != nil {
-		return createError("FetchAll", e.Error())
+		return createError("prepareFetch", e.Error())
+	} else {
+		c.rows = rowRaw
 	}
 
 	columns, e := c.rows.Columns()
 
 	if e != nil {
 		return createError("FetchAll", e.Error())
+	} else {
+		c.columns = columns
 	}
 
 	rowDataRaw := make([]sql.RawBytes, len(columns))
@@ -48,28 +54,28 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 	for i := range rowDataRaw {
 		rowMemory[i] = &rowDataRaw[i]
 	}
+	c.rowDataRaw = rowDataRaw
+	c.rowMemory = rowMemory
+
+	return nil
+}
+
+func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
+	if e := c.prepareFetch(); e != nil {
+		return e
+	}
 
 	rowAll := make([]toolkit.M, 0)
+	defer c.FetchClose()
 
-	defer c.rows.Close()
-
-	for c.rows.Next() {
-		e := c.rows.Scan(rowMemory...)
-
-		if e != nil {
-			return createError("FetchAll", e.Error())
-		}
-
+	for {
 		rowData := toolkit.M{}
 
-		for i, each := range rowDataRaw {
-			value := "NULL"
-
-			if each != nil {
-				value = string(each)
+		if isNext, e := c.Fetch(&rowData); !isNext {
+			if e != nil {
+				return e
 			}
-
-			rowData.Set(columns[i], value)
+			break
 		}
 
 		rowAll = append(rowAll, rowData)
@@ -80,17 +86,45 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 	return c.rows.Err()
 }
 
+func (c *Cursor) Fetch(result interface{}) (bool, error) {
+	if !c.rows.Next() {
+		return false, nil
+	}
+
+	e := c.rows.Scan(c.rowMemory...)
+
+	if e != nil {
+		return false, createError("Fetch", e.Error())
+	}
+
+	rowData := toolkit.M{}
+
+	for i, each := range c.rowDataRaw {
+		value := "NULL"
+
+		if each != nil {
+			value = string(each)
+		}
+
+		rowData.Set(c.columns[i], value)
+	}
+
+	*(result.(*toolkit.M)) = rowData
+
+	return true, nil
+}
+
 // func (c *Cursor) ResetFetch() error {
-// }
-
-// func (c *Cursor) FetchClose(result interface{}) (bool, error) {
-// }
-
-// func (c *Cursor) Fetch(result interface{}) (bool, error) {
 // }
 
 // func (c *Cursor) Count() int {
 // }
 
-// func (c *Cursor) Close() {
-// }
+func (c *Cursor) Close() {
+	c.rows.Close()
+}
+
+func (c *Cursor) FetchClose(result interface{}) (bool, error) {
+	c.Close()
+	return true, nil
+}
