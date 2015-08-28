@@ -66,30 +66,43 @@ func (c *Cursor) prepareFetch() error {
 	return nil
 }
 
-func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
+func (c *Cursor) FetchN(nCount int, result interface{}, closeCursor bool) (int, error) {
 	if e := c.prepareFetch(); e != nil {
-		return e
+		return 0, e
 	}
 
 	rowAll := make([]toolkit.M, 0)
-	defer c.Close()
+
+	if closeCursor {
+		defer c.Close()
+	}
+
+	var i, j int
 
 	for {
+		if nCount != -1 && i >= nCount {
+			break
+		}
+
+		i++
+
 		rowData := toolkit.M{}
 
 		if isNext, e := c.Fetch(&rowData); !isNext {
 			if e != nil {
-				return e
+				return j, e
 			}
 			break
 		}
 
 		rowAll = append(rowAll, rowData)
+
+		j++
 	}
 
 	*(result.(*[]toolkit.M)) = rowAll
 
-	return c.rows.Err()
+	return j, nil
 }
 
 func (c *Cursor) Fetch(result interface{}) (bool, error) {
@@ -124,6 +137,30 @@ func (c *Cursor) Fetch(result interface{}) (bool, error) {
 	return true, nil
 }
 
+func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
+	resultInside := []toolkit.M{}
+
+	if _, e := c.FetchN(-1, &resultInside, closeCursor); e != nil {
+		return e
+	}
+
+	*(result.(*[]toolkit.M)) = resultInside
+
+	return nil
+}
+
+func (c *Cursor) FetchClose(result interface{}) (bool, error) {
+	resultInside := []toolkit.M{}
+
+	if _, e := c.FetchN(-1, &resultInside, true); e != nil {
+		return false, e
+	}
+
+	*(result.(*[]toolkit.M)) = resultInside
+
+	return true, nil
+}
+
 func (c *Cursor) ResetFetch() error {
 	c.isPrepared = false
 	return c.prepareFetch()
@@ -149,9 +186,4 @@ func (c *Cursor) Count() int {
 func (c *Cursor) Close() {
 	c.isPrepared = false
 	c.rows.Close()
-}
-
-func (c *Cursor) FetchClose(result interface{}) (bool, error) {
-	c.Close()
-	return true, nil
 }

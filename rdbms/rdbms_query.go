@@ -101,6 +101,9 @@ func (q *Query) Parse(qe *base.QE, ins toolkit.M) interface{} {
 	} else if qe.FieldOp == base.OpAnd || qe.FieldOp == base.OpOr {
 		parsedWhere := q.parseWhere(qe.FieldOp, qe.Value.([]*base.QE), ins)
 		return parsedWhere
+	} else if qe.FieldOp == base.OpGroupBy {
+		parsedGroup := strings.Join(qe.Value.([]string), ", ")
+		return parsedGroup
 	}
 
 	return qe.Value
@@ -125,6 +128,11 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 		if settings.Has("where") {
 			queryPart := settings.Get("where", "").(string)
 			queryString = fmt.Sprintf("%sWHERE %s ", queryString, queryPart)
+		}
+
+		if settings.Has("groupby") {
+			queryPart := settings.Get("groupby", "").(string)
+			queryString = fmt.Sprintf("%sGROUP BY %s ", queryString, queryPart)
 		}
 
 		if settings.Has("orderby") {
