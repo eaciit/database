@@ -147,21 +147,7 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 		}
 
 		if q.Connection.(*Connection).Driver == "oci8" {
-			if settings.Has("limit") && settings.Has("skip") {
-				querySelect := settings.Get("select", "").(string)
-				queryLimit := settings.Get("limit", 10).(int)
-				querySkip := settings.Get("skip", 10).(int)
-				queryString = fmt.Sprintf("SELECT %s FROM (SELECT table_inner.*, ROWNUM as table_counter from (%s) table_inner) WHERE table_counter > %d and (table_counter - %d) <= %d", querySelect, queryString, querySkip, querySkip, queryLimit)
-			} else if settings.Has("limit") {
-				querySelect := settings.Get("select", "").(string)
-				queryPart := settings.Get("limit", 10).(int)
-				queryString = fmt.Sprintf("SELECT %s FROM (SELECT table_inner.*, ROWNUM as table_counter from (%s) table_inner) WHERE table_counter <= %d", querySelect, queryString, queryPart)
-			} else if settings.Has("skip") {
-				querySelect := settings.Get("select", "").(string)
-				queryPart := settings.Get("skip", 10).(int)
-				queryString = fmt.Sprintf("SELECT %s FROM (SELECT table_inner.*, ROWNUM as table_counter from (%s) table_inner) WHERE table_counter > %d", querySelect, queryString, queryPart)
-			}
-
+			queryString = q.compileLimitSkipForOracle(queryString)
 			// e := createError("Compile", "Limit & Offset currently is not support on oracle driver")
 			// fmt.Println(e.Error())
 			// os.Exit(0)
@@ -179,4 +165,25 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 	}
 
 	return compileNow()
+}
+
+func (q *Query) compileLimitSkipForOracle(queryString string) string {
+	settings := q.Settings()
+
+	if settings.Has("limit") && settings.Has("skip") {
+		querySelect := settings.Get("select", "").(string)
+		queryLimit := settings.Get("limit", 10).(int)
+		querySkip := settings.Get("skip", 10).(int)
+		queryString = fmt.Sprintf("SELECT %s FROM (SELECT table_inner.*, ROWNUM as table_counter from (%s) table_inner) WHERE table_counter > %d and (table_counter - %d) <= %d", querySelect, queryString, querySkip, querySkip, queryLimit)
+	} else if settings.Has("limit") {
+		querySelect := settings.Get("select", "").(string)
+		queryPart := settings.Get("limit", 10).(int)
+		queryString = fmt.Sprintf("SELECT %s FROM (SELECT table_inner.*, ROWNUM as table_counter from (%s) table_inner) WHERE table_counter <= %d", querySelect, queryString, queryPart)
+	} else if settings.Has("skip") {
+		querySelect := settings.Get("select", "").(string)
+		queryPart := settings.Get("skip", 10).(int)
+		queryString = fmt.Sprintf("SELECT %s FROM (SELECT table_inner.*, ROWNUM as table_counter from (%s) table_inner) WHERE table_counter > %d", querySelect, queryString, queryPart)
+	}
+
+	return queryString
 }
