@@ -12,8 +12,21 @@ var conn base.IConnection
 func main() {
 	conn = mysql.NewConnection("localhost", "root", "", "db_muslimorid")
 	conn.Connect()
+	// testInsertSet()
 	testSelectFromWhereOrderLimitOffset()
 	conn.Close()
+}
+
+func testInsert() {
+	param := toolkit.M{"title": "tresno", "category": "cinta"}
+	c, _, e := conn.Query().SetStringSign("'").Insert().From("tb_post").Run(param)
+
+	if e != nil {
+		fmt.Println(e.Error())
+	}
+
+	fmt.Println("============== QUERY TEST INSET-FROM-SET")
+	fmt.Println(c.GetQueryString())
 }
 
 func testSelectFromWhereOrderLimitOffset() {

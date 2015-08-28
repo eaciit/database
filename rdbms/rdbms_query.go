@@ -73,15 +73,7 @@ func (q *Query) parseWhere(op string, clauses []*base.QE, ins toolkit.M) string 
 	parsedWhere := strings.Join(result, fmt.Sprintf(" %s ", sep))
 
 	for k, v := range ins {
-		var value string
-
-		switch v.(type) {
-		case int:
-			value = strconv.Itoa(v.(int))
-		default:
-			value = q.StringValue(v.(string))
-		}
-
+		value := q.getAsString(v)
 		parsedWhere = strings.Replace(parsedWhere, k, value, -1)
 	}
 
@@ -162,6 +154,23 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 				queryString = fmt.Sprintf("%sOFFSET %d ", queryString, queryPart)
 			}
 		}
+	} else if commandType == base.DB_INSERT {
+		if settings.Has("from") {
+			queryPart := settings.Get("from", "").(string)
+			queryString = fmt.Sprintf("INSERT INTO %s ", queryPart)
+		}
+
+		keys := []string{}
+		vals := []string{}
+
+		for k, v := range ins {
+			keys = append(keys, k)
+			vals = append(vals, q.getAsString(v))
+		}
+
+		keyString := strings.Join(keys, ", ")
+		valString := strings.Join(vals, ", ")
+		queryString = fmt.Sprintf("%s(%s) VALUES (%s) ", queryString, keyString, valString)
 	}
 
 	return compileNow()
@@ -186,4 +195,19 @@ func (q *Query) compileLimitSkipForOracle(queryString string) string {
 	}
 
 	return queryString
+}
+
+func (q *Query) getAsString(v interface{}) string {
+	value := ""
+
+	switch v.(type) {
+	case int:
+		value = strconv.Itoa(v.(int))
+	case string:
+		value = q.StringValue(v.(string))
+	default:
+		value = fmt.Sprintf("%v", v)
+	}
+
+	return value
 }
