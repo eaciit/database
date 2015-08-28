@@ -124,11 +124,27 @@ func (c *Cursor) Fetch(result interface{}) (bool, error) {
 	return true, nil
 }
 
-// func (c *Cursor) ResetFetch() error {
-// }
+func (c *Cursor) ResetFetch() error {
+	c.isPrepared = false
+	return c.prepareFetch()
+}
 
-// func (c *Cursor) Count() int {
-// }
+func (c *Cursor) Count() int {
+	session := c.Connection.(*Connection).Sql
+	rows, e := session.Query(c.QueryString)
+
+	if e != nil {
+		return 0
+	}
+
+	var counter int
+
+	for rows.Next() {
+		counter++
+	}
+
+	return counter
+}
 
 func (c *Cursor) Close() {
 	c.isPrepared = false
