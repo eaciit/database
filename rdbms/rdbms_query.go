@@ -160,5 +160,6 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 	}
 
 	cursor := q.Connection.Table(queryString, nil)
+	cursor.ResetFetch()
 	return cursor, 0, nil
 }

@@ -9,7 +9,6 @@ import (
 
 type Cursor struct {
 	base.CursorBase
-	isPrepared bool
 	rows       *sql.Rows
 	columns    []string
 	rowMemory  []interface{}
@@ -29,10 +28,6 @@ func (c *Cursor) validate() error {
 }
 
 func (c *Cursor) prepareFetch() error {
-	if c.isPrepared {
-		return nil
-	}
-
 	if e := c.validate(); e != nil {
 		return createError("prepareFetch", e.Error())
 	}
@@ -61,16 +56,11 @@ func (c *Cursor) prepareFetch() error {
 	}
 	c.rowDataRaw = rowDataRaw
 	c.rowMemory = rowMemory
-	c.isPrepared = true
 
 	return nil
 }
 
 func (c *Cursor) FetchN(nCount int, result interface{}, closeCursor bool) (int, error) {
-	if e := c.prepareFetch(); e != nil {
-		return 0, e
-	}
-
 	rowAll := make([]toolkit.M, 0)
 
 	if closeCursor {
@@ -106,10 +96,6 @@ func (c *Cursor) FetchN(nCount int, result interface{}, closeCursor bool) (int, 
 }
 
 func (c *Cursor) Fetch(result interface{}) (bool, error) {
-	if e := c.prepareFetch(); e != nil {
-		return false, e
-	}
-
 	if !c.rows.Next() {
 		return false, nil
 	}
@@ -162,7 +148,6 @@ func (c *Cursor) FetchClose(result interface{}) (bool, error) {
 }
 
 func (c *Cursor) ResetFetch() error {
-	c.isPrepared = false
 	return c.prepareFetch()
 }
 
@@ -184,6 +169,5 @@ func (c *Cursor) Count() int {
 }
 
 func (c *Cursor) Close() {
-	c.isPrepared = false
 	c.rows.Close()
 }
