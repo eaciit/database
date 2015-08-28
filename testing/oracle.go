@@ -12,9 +12,59 @@ var conn base.IConnection
 func main() {
 	conn = oracle.NewConnection("192.168.0.210:1521", "scott", "tiger", "ORCL/orcl.eaciit.local")
 	conn.Connect()
-	testSelectFromWhereOrder()
-	testSelectFromLimitOffset()
+	// testInsert()
+	// testUpdate()
+	// testDelete()
+	// testSelectFromWhereOrder()
+	// testSelectFromLimitOffset()
 	conn.Close()
+}
+
+func testInsert() {
+	c, _, e := conn.Query().
+		SetStringSign("'").
+		Insert().
+		From("customers").
+		Run(toolkit.M{"data": toolkit.M{"customerid": "nokia", "companyname": "nokia surabaya"}})
+
+	if e != nil {
+		fmt.Println(e.Error())
+	}
+
+	fmt.Println("============== QUERY TEST INSERT-FROM-SET")
+	fmt.Println(c.GetQueryString())
+}
+
+func testUpdate() {
+	c, _, e := conn.Query().
+		SetStringSign("'").
+		Update().
+		From("customers").
+		Where(base.Eq("customerid", "@id")).
+		Run(toolkit.M{"data": toolkit.M{"companyname": "nokia sidoarjo"}, "@id": "nokia"})
+
+	if e != nil {
+		fmt.Println(e.Error())
+	}
+
+	fmt.Println("============== QUERY TEST UPDATE-FROM-SET-WHERE")
+	fmt.Println(c.GetQueryString())
+}
+
+func testDelete() {
+	c, _, e := conn.Query().
+		SetStringSign("'").
+		Delete().
+		From("customers").
+		Where(base.Eq("customerid", "@id")).
+		Run(toolkit.M{"@id": "nokia"})
+
+	if e != nil {
+		fmt.Println(e.Error())
+	}
+
+	fmt.Println("============== QUERY TEST UPDATE-FROM-SET-WHERE")
+	fmt.Println(c.GetQueryString())
 }
 
 func testSelectFromWhereOrder() {
