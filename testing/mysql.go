@@ -22,7 +22,6 @@ func testSelectFromWhereOrderLimitOffset() {
 		Select("id", "category", "author_name").
 		From("tb_post").
 		Where(base.Lte("id", "@1")).
-		// Where(base.Or(base.Lte("id", "@1"))).
 		OrderBy("id asc").
 		Limit(3).
 		Skip(100)
@@ -34,6 +33,7 @@ func testSelectFromWhereOrderLimitOffset() {
 		fmt.Println(e.Error())
 	}
 
+	fmt.Println("============== QUERY TEST SELECT-FROM-WHERE-ORDERBY-LIMIT-OFFSET")
 	fmt.Println(c.GetQueryString())
 
 	for _, each := range r {

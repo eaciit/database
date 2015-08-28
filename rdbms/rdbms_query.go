@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/eaciit/database/base"
 	"github.com/eaciit/toolkit"
-	"os"
+	_ "os"
 	"strconv"
 	"strings"
 )
@@ -114,6 +114,12 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 	commandType := q.CommandType(settings)
 	queryString := ""
 
+	compileNow := func() (base.ICursor, interface{}, error) {
+		cursor := q.Connection.Table(queryString, nil)
+		cursor.ResetFetch()
+		return cursor, 0, nil
+	}
+
 	if commandType == base.DB_SELECT {
 		if settings.Has("select") {
 			queryPart := settings.Get("select", "").(string)
@@ -141,25 +147,36 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 		}
 
 		if q.Connection.(*Connection).Driver == "oci8" {
-			if settings.Has("limit") || settings.Has("skip") {
-				e := createError("Compile", "Limit & Offset currently is not support on oracle driver")
-				fmt.Println(e.Error())
-				os.Exit(0)
+			if settings.Has("limit") && settings.Has("skip") {
+				querySelect := settings.Get("select", "").(string)
+				queryLimit := settings.Get("limit", 10).(int)
+				querySkip := settings.Get("skip", 10).(int)
+				queryString = fmt.Sprintf("SELECT %s FROM (SELECT table_inner.*, ROWNUM as table_counter from (%s) table_inner) WHERE table_counter > %d and (table_counter - %d) <= %d", querySelect, queryString, querySkip, querySkip, queryLimit)
+			} else if settings.Has("limit") {
+				querySelect := settings.Get("select", "").(string)
+				queryPart := settings.Get("limit", 10).(int)
+				queryString = fmt.Sprintf("SELECT %s FROM (SELECT table_inner.*, ROWNUM as table_counter from (%s) table_inner) WHERE table_counter <= %d", querySelect, queryString, queryPart)
+			} else if settings.Has("skip") {
+				querySelect := settings.Get("select", "").(string)
+				queryPart := settings.Get("skip", 10).(int)
+				queryString = fmt.Sprintf("SELECT %s FROM (SELECT table_inner.*, ROWNUM as table_counter from (%s) table_inner) WHERE table_counter > %d", querySelect, queryString, queryPart)
 			}
-		}
 
-		if settings.Has("limit") {
-			queryPart := settings.Get("limit", 10).(int)
-			queryString = fmt.Sprintf("%sLIMIT %d ", queryString, queryPart)
-		}
+			// e := createError("Compile", "Limit & Offset currently is not support on oracle driver")
+			// fmt.Println(e.Error())
+			// os.Exit(0)
+		} else {
+			if settings.Has("limit") {
+				queryPart := settings.Get("limit", 10).(int)
+				queryString = fmt.Sprintf("%sLIMIT %d ", queryString, queryPart)
+			}
 
-		if settings.Has("skip") {
-			queryPart := settings.Get("skip", 0).(int)
-			queryString = fmt.Sprintf("%sOFFSET %d ", queryString, queryPart)
+			if settings.Has("skip") {
+				queryPart := settings.Get("skip", 0).(int)
+				queryString = fmt.Sprintf("%sOFFSET %d ", queryString, queryPart)
+			}
 		}
 	}
 
-	cursor := q.Connection.Table(queryString, nil)
-	cursor.ResetFetch()
-	return cursor, 0, nil
+	return compileNow()
 }
