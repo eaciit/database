@@ -106,9 +106,14 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 	commandType := q.CommandType(settings)
 	queryString := ""
 
-	compileNow := func() (base.ICursor, interface{}, error) {
+	compileNow := func(err ...error) (base.ICursor, interface{}, error) {
 		cursor := q.Connection.Table(queryString, nil)
 		cursor.ResetFetch()
+
+		if len(err) > 0 {
+			return nil, 0, err[0]
+		}
+
 		return cursor, 0, nil
 	}
 
@@ -156,7 +161,7 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 			queryPart := settings.Get("from", "").(string)
 			queryString = fmt.Sprintf("INSERT INTO %s ", queryPart)
 		} else {
-			return compileNow()
+			return compileNow(createError("Compile", "keyword FROM not found"))
 		}
 
 		queryString = q.compileInsertFrom(queryString, ins)
@@ -165,7 +170,7 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 			queryPart := settings.Get("from", "").(string)
 			queryString = fmt.Sprintf("UPDATE %s ", queryPart)
 		} else {
-			return compileNow()
+			return compileNow(createError("Compile", "keyword FROM not found"))
 		}
 
 		queryString = q.compileUpdateFrom(queryString, ins)
