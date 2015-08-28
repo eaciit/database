@@ -140,9 +140,6 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 
 		if q.Connection.(*Connection).Driver == "oci8" {
 			queryString = q.compileLimitSkipForOracle(queryString)
-			// e := createError("Compile", "Limit & Offset currently is not support on oracle driver")
-			// fmt.Println(e.Error())
-			// os.Exit(0)
 		} else {
 			if settings.Has("limit") {
 				queryPart := settings.Get("limit", 10).(int)
@@ -158,19 +155,39 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 		if settings.Has("from") {
 			queryPart := settings.Get("from", "").(string)
 			queryString = fmt.Sprintf("INSERT INTO %s ", queryPart)
+		} else {
+			return compileNow()
 		}
 
-		keys := []string{}
-		vals := []string{}
-
-		for k, v := range ins {
-			keys = append(keys, k)
-			vals = append(vals, q.getAsString(v))
+		queryString = q.compileInsertFrom(queryString, ins)
+	} else if commandType == base.DB_UPDATE {
+		if settings.Has("from") {
+			queryPart := settings.Get("from", "").(string)
+			queryString = fmt.Sprintf("UPDATE %s ", queryPart)
+		} else {
+			return compileNow()
 		}
 
-		keyString := strings.Join(keys, ", ")
-		valString := strings.Join(vals, ", ")
-		queryString = fmt.Sprintf("%s(%s) VALUES (%s) ", queryString, keyString, valString)
+		queryString = q.compileUpdateFrom(queryString, ins)
+
+		if settings.Has("where") {
+			queryPart := settings.Get("where", "").(string)
+			queryString = fmt.Sprintf("%sWHERE %s ", queryString, queryPart)
+		}
+
+		queryString = q.compileWhereBinding(queryString, ins)
+	} else if commandType == base.DB_DELETE {
+		if settings.Has("from") {
+			queryPart := settings.Get("from", "").(string)
+			queryString = fmt.Sprintf("%sDELETE FROM %s ", queryString, queryPart)
+		}
+
+		if settings.Has("where") {
+			queryPart := settings.Get("where", "").(string)
+			queryString = fmt.Sprintf("%sWHERE %s ", queryString, queryPart)
+		}
+
+		queryString = q.compileWhereBinding(queryString, ins)
 	}
 
 	return compileNow()
@@ -192,6 +209,62 @@ func (q *Query) compileLimitSkipForOracle(queryString string) string {
 		querySelect := settings.Get("select", "").(string)
 		queryPart := settings.Get("skip", 10).(int)
 		queryString = fmt.Sprintf("SELECT %s FROM (SELECT table_inner.*, ROWNUM as table_counter from (%s) table_inner) WHERE table_counter > %d", querySelect, queryString, queryPart)
+	}
+
+	// e := createError("Compile", "Limit & Offset currently is not support on oracle driver")
+	// fmt.Println(e.Error())
+	// os.Exit(0)
+
+	return queryString
+}
+
+func (q *Query) compileInsertFrom(queryString string, ins toolkit.M) string {
+	keyString, valString := func() (string, string) {
+		if !ins.Has("data") {
+			return "", ""
+		}
+
+		keys := []string{}
+		vals := []string{}
+
+		for k, v := range ins.Get("data", toolkit.M{}).(toolkit.M) {
+			keys = append(keys, k)
+			vals = append(vals, q.getAsString(v))
+		}
+
+		return strings.Join(keys, ", "), strings.Join(vals, ", ")
+	}()
+
+	queryString = fmt.Sprintf("%s(%s) VALUES (%s) ", queryString, keyString, valString)
+	return queryString
+}
+
+func (q *Query) compileUpdateFrom(queryString string, ins toolkit.M) string {
+	updateString := func() string {
+		if !ins.Has("data") {
+			return ""
+		}
+
+		var updates []string
+
+		for k, v := range ins.Get("data", toolkit.M{}).(toolkit.M) {
+			updates = append(updates, fmt.Sprintf("%s = %s", k, q.getAsString(v)))
+		}
+
+		return strings.Join(updates, ", ")
+	}()
+
+	queryString = fmt.Sprintf("%sSET %s ", queryString, updateString)
+	return queryString
+}
+
+func (q *Query) compileWhereBinding(queryString string, ins toolkit.M) string {
+	for k, v := range ins {
+		if k == "data" {
+			continue
+		}
+
+		queryString = strings.Replace(queryString, k, q.getAsString(v), -1)
 	}
 
 	return queryString

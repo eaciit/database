@@ -12,20 +12,57 @@ var conn base.IConnection
 func main() {
 	conn = mysql.NewConnection("localhost", "root", "", "db_muslimorid")
 	conn.Connect()
-	// testInsertSet()
+	// testInsert()
+	// testUpdate()
+	// testDelete()
 	testSelectFromWhereOrderLimitOffset()
 	conn.Close()
 }
 
 func testInsert() {
-	param := toolkit.M{"title": "tresno", "category": "cinta"}
-	c, _, e := conn.Query().SetStringSign("'").Insert().From("tb_post").Run(param)
+	c, _, e := conn.Query().
+		SetStringSign("'").
+		Insert().
+		From("tb_post").
+		Run(toolkit.M{"data": toolkit.M{"title": "tresno", "category": "cinta"}})
 
 	if e != nil {
 		fmt.Println(e.Error())
 	}
 
-	fmt.Println("============== QUERY TEST INSET-FROM-SET")
+	fmt.Println("============== QUERY TEST INSERT-FROM-SET")
+	fmt.Println(c.GetQueryString())
+}
+
+func testUpdate() {
+	c, _, e := conn.Query().
+		SetStringSign("'").
+		Update().
+		From("tb_post").
+		Where(base.Eq("id", "@id")).
+		Run(toolkit.M{"data": toolkit.M{"title": "keyboard", "category": "cinta"}, "@id": 377})
+
+	if e != nil {
+		fmt.Println(e.Error())
+	}
+
+	fmt.Println("============== QUERY TEST UPDATE-FROM-SET-WHERE")
+	fmt.Println(c.GetQueryString())
+}
+
+func testDelete() {
+	c, _, e := conn.Query().
+		SetStringSign("'").
+		Delete().
+		From("tb_post").
+		Where(base.Eq("id", "@id")).
+		Run(toolkit.M{"@id": 377})
+
+	if e != nil {
+		fmt.Println(e.Error())
+	}
+
+	fmt.Println("============== QUERY TEST UPDATE-FROM-SET-WHERE")
 	fmt.Println(c.GetQueryString())
 }
 
