@@ -91,6 +91,40 @@ func (c *Cursor) Fetch(result interface{}) (bool, error) {
 	return boolIter, nil
 }
 
+func (c *Cursor) FetchN(qty int, ds *base.DataSet, closeCursor bool) error {
+	var e error
+	e = c.validate()
+	if e != nil {
+		return e
+	}
+	if c.mgoIter == nil {
+		e = c.ResetFetch()
+		if e != nil {
+			return e
+		}
+	}
+	if closeCursor {
+		defer c.Close()
+	}
+
+	scan := true
+	i := 0
+	for scan {
+		dataHolder := ds.Model()
+		if boolIter := c.mgoIter.Next(dataHolder); boolIter {
+			ds.Data = append(ds.Data, dataHolder)
+			i = i + 1
+			if i == qty {
+				scan = false
+			}
+		} else {
+			scan = false
+		}
+	}
+
+	return nil
+}
+
 func (c *Cursor) Count() int {
 	var e error
 	var n int
