@@ -7,9 +7,9 @@ install:
   - go get github.com/eaciit/errorlib
   - go get github.com/eaciit/toolkit
   - go get gopkg.in/mgo.v2
-  - go get github.com/mattn/go-oci8
   - go get github.com/go-sql-driver/mysql
   - go get github.com/denisenkom/go-mssqldb
+  - go get github.com/mattn/go-oci8
 
 before_install:
   - cp .netrc ~
