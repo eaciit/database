@@ -20,10 +20,10 @@ func NewConnection(connectionType string, host string, username string, password
 		c := mongodb.NewConnection(host, username, password, dbname)
 		return c, nil
 	} else if connectionType == "oracle" {
-		c := oracle.NewConnection(host, username, password, database)
+		c := oracle.NewConnection(host, username, password, dbname)
 		return c, nil
 	} else if connectionType == "mysql" {
-		c := mysql.NewConnection(host, username, password, database)
+		c := mysql.NewConnection(host, username, password, dbname)
 		return c, nil
 	}
 
