@@ -143,13 +143,15 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 			queryString = fmt.Sprintf("%sGROUP BY %s ", queryString, queryPart)
 		}
 
-		if settings.Has("orderby") {
+		if settings.Has("orderby") && q.Connection.(*Connection).Driver != "mssql" {
 			queryPart := settings.Get("orderby", "").(string)
 			queryString = fmt.Sprintf("%sORDER BY %s ", queryString, queryPart)
 		}
 
 		if q.Connection.(*Connection).Driver == "oci8" {
 			queryString = q.compileLimitSkipForOracle(queryString)
+		} else if q.Connection.(*Connection).Driver == "mssql" {
+			queryString = q.compileLimitSkipForSqlServer(queryString)
 		} else {
 			if settings.Has("limit") {
 				queryPart := settings.Get("limit", 10).(int)
@@ -224,6 +226,35 @@ func (q *Query) compileLimitSkipForOracle(queryString string) string {
 	// e := createError("Compile", "Limit & Offset currently is not support on oracle driver")
 	// fmt.Println(e.Error())
 	// os.Exit(0)
+
+	return queryString
+}
+
+func (q *Query) compileLimitSkipForSqlServer(queryString string) string {
+	settings := q.Settings()
+	rowNumber := "ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) as table_counter"
+
+	if settings.Has("orderby") {
+		queryPart := settings.Get("orderby", "").(string)
+		rowNumber = strings.Replace(rowNumber, "(SELECT NULL)", queryPart, -1)
+	}
+
+	queryString = strings.Replace(queryString, " FROM", fmt.Sprintf(", %s FROM", rowNumber), -1)
+
+	if settings.Has("limit") && settings.Has("skip") {
+		querySelect := settings.Get("select", "").(string)
+		queryLimit := settings.Get("limit", 10).(int)
+		querySkip := settings.Get("skip", 10).(int)
+		queryString = fmt.Sprintf("SELECT TOP %d %s FROM (%s) table_inner WHERE table_counter > %d", queryLimit, querySelect, queryString, querySkip)
+	} else if settings.Has("limit") {
+		querySelect := settings.Get("select", "").(string)
+		queryPart := settings.Get("limit", 10).(int)
+		queryString = fmt.Sprintf("SELECT TOP %d %s FROM (%s) table_inner", queryPart, querySelect, queryString)
+	} else if settings.Has("skip") {
+		querySelect := settings.Get("select", "").(string)
+		queryPart := settings.Get("skip", 10).(int)
+		queryString = fmt.Sprintf("SELECT %s FROM (%s) table_inner WHERE table_counter > %d", querySelect, queryString, queryPart)
+	}
 
 	return queryString
 }
