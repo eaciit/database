@@ -1,0 +1,8 @@
+orainc=/Applications/oracle/instantclient_11_2/sdk/include
+oralib=/Applications/oracle/instantclient_11_2
+
+Name: oci8
+Description: Oracle Instant Client
+Version: 12.1
+Cflags: -I${orainc}
+Libs: -L${oralib} -lclntsh
