@@ -110,8 +110,10 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 		cursor := q.Connection.Table(queryString, nil)
 		errResetFetch := cursor.ResetFetch()
 
-		panic(errResetFetch)
-		os.Exit(0)
+		if errResetFetch != nil {
+			panic(errResetFetch)
+			os.Exit(0)
+		}
 
 		if len(err) > 0 {
 			return nil, 0, err[0]
@@ -197,7 +199,7 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 
 		queryString = q.compileWhereBinding(queryString, ins)
 	}
-
+	fmt.Println(queryString)
 	return compileNow()
 }
 
