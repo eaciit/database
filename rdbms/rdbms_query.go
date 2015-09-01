@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/eaciit/database/base"
 	"github.com/eaciit/toolkit"
-	_ "os"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -108,7 +108,10 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 
 	compileNow := func(err ...error) (base.ICursor, interface{}, error) {
 		cursor := q.Connection.Table(queryString, nil)
-		cursor.ResetFetch()
+		errResetFetch := cursor.ResetFetch()
+
+		panic(errResetFetch)
+		os.Exit(0)
 
 		if len(err) > 0 {
 			return nil, 0, err[0]
