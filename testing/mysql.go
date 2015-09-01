@@ -15,7 +15,8 @@ func main() {
 	// testInsert()
 	// testUpdate()
 	// testDelete()
-	testSelectFromWhereOrderLimitOffset()
+	testFetchN()
+	// testSelectFromWhereOrderLimitOffset()
 	conn.Close()
 }
 
@@ -64,6 +65,43 @@ func testDelete() {
 
 	fmt.Println("============== QUERY TEST UPDATE-FROM-SET-WHERE")
 	fmt.Println(c.GetQueryString())
+}
+
+func testFetchN() {
+	q := conn.Query().
+		SetStringSign("'").
+		Select("id", "category", "author_name").
+		From("tb_post").
+		Where(base.Lte("id", "@1")).
+		OrderBy("id asc").
+		Limit(3).
+		Skip(100)
+	c := q.Cursor(toolkit.M{"@1": 373})
+
+	fmt.Println("============== QUERY TEST FETCHN SELECT-FROM-WHERE-ORDERBY-LIMIT-OFFSET")
+	fmt.Println(c.GetQueryString())
+
+	var r *base.DataSet
+
+	r = base.NewDataSet()
+
+	if e := c.FetchN(1, r, false); e != nil {
+		fmt.Println(e.Error())
+	}
+
+	for _, each := range r.Data {
+		fmt.Println(each)
+	}
+
+	r = base.NewDataSet()
+
+	if e := c.FetchN(1, r, false); e != nil {
+		fmt.Println(e.Error())
+	}
+
+	for _, each := range r.Data {
+		fmt.Println(each)
+	}
 }
 
 func testSelectFromWhereOrderLimitOffset() {

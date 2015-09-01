@@ -60,7 +60,7 @@ func (c *Cursor) prepareFetch() error {
 	return nil
 }
 
-func (c *Cursor) FetchN(nCount int, result interface{}, closeCursor bool) (int, error) {
+func (c *Cursor) doFetch(nCount int, result interface{}, callbackEach func(toolkit.M), closeCursor bool) (int, error) {
 	rowAll := make([]toolkit.M, 0)
 
 	if closeCursor {
@@ -83,6 +83,10 @@ func (c *Cursor) FetchN(nCount int, result interface{}, closeCursor bool) (int, 
 				return j, e
 			}
 			break
+		}
+
+		if callbackEach != nil {
+			callbackEach(rowData)
 		}
 
 		rowAll = append(rowAll, rowData)
@@ -123,10 +127,24 @@ func (c *Cursor) Fetch(result interface{}) (bool, error) {
 	return true, nil
 }
 
+func (c *Cursor) FetchN(nCount int, resultDataSet *base.DataSet, closeCursor bool) error {
+	resultInside := []toolkit.M{}
+
+	_, e := c.doFetch(nCount, &resultInside, func(each toolkit.M) {
+		resultDataSet.Data = append(resultDataSet.Data, each)
+	}, closeCursor)
+
+	if e != nil {
+		return e
+	}
+
+	return nil
+}
+
 func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 	resultInside := []toolkit.M{}
 
-	if _, e := c.FetchN(-1, &resultInside, closeCursor); e != nil {
+	if _, e := c.doFetch(-1, &resultInside, nil, closeCursor); e != nil {
 		return e
 	}
 
@@ -138,7 +156,7 @@ func (c *Cursor) FetchAll(result interface{}, closeCursor bool) error {
 func (c *Cursor) FetchClose(result interface{}) (bool, error) {
 	resultInside := []toolkit.M{}
 
-	if _, e := c.FetchN(-1, &resultInside, true); e != nil {
+	if _, e := c.doFetch(-1, &resultInside, nil, true); e != nil {
 		return false, e
 	}
 
