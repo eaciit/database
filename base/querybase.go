@@ -21,6 +21,7 @@ type IQuery interface {
 	Select(...string) IQuery
 	SetFields(...string) IQuery
 	Where(...*QE) IQuery
+	WhereString(string) IQuery
 	OrderBy(...string) IQuery
 	GroupBy(...string) IQuery
 	Aggregate(...*QE) IQuery
@@ -108,6 +109,11 @@ func (q *QueryBase) Where(qes ...*QE) IQuery {
 	// because this will become a problem
 	// for rdbms
 	q.addQE("where", And(qes...))
+	return q
+}
+
+func (q *QueryBase) WhereString(where string) IQuery {
+	q.addQE("whereString", &QE{"", OpWhereString, where})
 	return q
 }
 

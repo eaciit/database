@@ -29,6 +29,7 @@ func main() {
 		//SetStringSign("\"").
 		Select("RigType", "RigName", "WellName").
 		From("WEISWellActivities").
+		// WhereString(`{"WellName": "PRINCESS P8"}`).
 		Where(Eq("WellName", "@val")).
 		Limit(5)
 

@@ -40,6 +40,8 @@ const (
 	OpOr           = "$or"
 	OpChain        = "$chain"
 
+	OpWhereString = "$wherestring"
+
 	OpSelect    = "$select"
 	OpSetfield  = "$setfield"
 	OpFromTable = "$from"
