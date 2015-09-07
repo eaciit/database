@@ -90,9 +90,13 @@ func (q *Query) Parse(qe *base.QE, ins toolkit.M) interface{} {
 	} else if qe.FieldOp == base.OpFromTable {
 		parsedTable := strings.Join(qe.Value.([]string), ", ")
 		return parsedTable
-	} else if qe.FieldOp == base.OpAnd || qe.FieldOp == base.OpOr {
-		parsedWhere := q.parseWhere(qe.FieldOp, qe.Value.([]*base.QE), ins)
-		return parsedWhere
+	} else if qe.FieldOp == base.OpWhereString || qe.FieldOp == base.OpAnd || qe.FieldOp == base.OpOr {
+		if qe.FieldOp == base.OpWhereString {
+			return qe.Value.(string)
+		} else {
+			parsedWhere := q.parseWhere(qe.FieldOp, qe.Value.([]*base.QE), ins)
+			return parsedWhere
+		}
 	} else if qe.FieldOp == base.OpGroupBy {
 		parsedGroup := strings.Join(qe.Value.([]string), ", ")
 		return parsedGroup
@@ -133,8 +137,13 @@ func (q *Query) Compile(ins toolkit.M) (base.ICursor, interface{}, error) {
 			queryString = fmt.Sprintf("%sFROM %s ", queryString, queryPart)
 		}
 
-		if settings.Has("where") {
-			queryPart := settings.Get("where", "").(string)
+		if settings.Has("where") || settings.Has("whereString") {
+			var whereKey = "where"
+			if settings.Has("whereString") {
+				whereKey = "whereString"
+			}
+
+			queryPart := settings.Get(whereKey, "").(string)
 			queryString = fmt.Sprintf("%sWHERE %s ", queryString, queryPart)
 		}
 
