@@ -1,11 +1,16 @@
 package mongodb
 
 import (
+	"encoding/json"
 	"fmt"
 	. "github.com/eaciit/database/base"
 	"github.com/eaciit/errorlib"
 	. "github.com/eaciit/toolkit"
+<<<<<<< HEAD
 	//"gopkg.in/mgo.v2/bson"
+=======
+	"os"
+>>>>>>> origin/master
 	"strings"
 )
 
@@ -120,6 +125,8 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 			//_ = "breakpoint"
 		}
 		result.Set("$and", ms)
+	} else if qe.FieldOp == OpWhereString {
+		return qe.Value.(string)
 	} else {
 		return nil
 	}
@@ -134,6 +141,18 @@ func mapEither(m1 M, m2 M, element string) (interface{}, bool) {
 	} else {
 		return nil, false
 	}
+}
+
+func (q *Query) ParseWhereString(whereInterface interface{}) interface{} {
+	var res interface{}
+	err := json.Unmarshal([]byte(whereInterface.(string)), &res)
+
+	if err != nil {
+		panic(err.Error())
+		os.Exit(0)
+	}
+
+	return res
 }
 
 func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
@@ -172,7 +191,11 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 		cursorParm := M{}
 		////_ = "breakpoint"
 		if s.Has("where") {
+			fmt.Println("...", s.Get("where", nil))
 			cursorParm["find"] = s.Get("where", nil)
+		}
+		if s.Has("whereString") {
+			cursorParm["find"] = q.ParseWhereString(s.Get("whereString", "{}"))
 		}
 		if hasFind {
 			if s.Has("find") {

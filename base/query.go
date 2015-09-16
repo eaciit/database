@@ -41,6 +41,8 @@ const (
 	OpChain        = "$chain"
 	OpFlatten      = "$flatten"
 
+	OpWhereString = "$wherestring"
+
 	OpSelect    = "$select"
 	OpSetfield  = "$setfield"
 	OpFromTable = "$from"

@@ -72,7 +72,8 @@ func testFetchN() {
 		SetStringSign("'").
 		Select("id", "category", "author_name").
 		From("tb_post").
-		Where(base.Lte("id", "@1")).
+		// Where(base.Lte("id", "@1")).
+		WhereString("id <= 373").
 		OrderBy("id asc").
 		Limit(3).
 		Skip(100)
