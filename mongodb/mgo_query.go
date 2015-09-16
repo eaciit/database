@@ -6,11 +6,7 @@ import (
 	. "github.com/eaciit/database/base"
 	"github.com/eaciit/errorlib"
 	. "github.com/eaciit/toolkit"
-<<<<<<< HEAD
-	//"gopkg.in/mgo.v2/bson"
-=======
 	"os"
->>>>>>> origin/master
 	"strings"
 )
 
