@@ -39,6 +39,7 @@ const (
 	OpAnd          = "$and"
 	OpOr           = "$or"
 	OpChain        = "$chain"
+	OpFlatten      = "$flatten"
 
 	OpSelect    = "$select"
 	OpSetfield  = "$setfield"

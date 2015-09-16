@@ -110,28 +110,6 @@ func (c *Connection) Execute(stmt string, parms M) (int, error) {
 	return 0, nil
 }
 
-/*
-func (c *Connection) Command(cmdText string, settings map[string]interface{}) *Command {
-	cmd := new(Command)
-	cmd.Connection = c
-	cmd.Text = cmdText
-	cmd.Settings = settings
-	return cmd
-}
-
-func (c *Connection) Adapter(tableName string) db.IAdapter {
-	a := new(Adapter)
-	a.Connection = c
-	//a.mgoColl = c.mdb.C(tableName)
-	a.SetCommand(db.DB_INSERT, c.Command(tableName, nil))
-	a.SetCommand(db.DB_UPDATE, c.Command(tableName, nil))
-	a.SetCommand(db.DB_DELETE, c.Command(tableName, nil))
-	a.SetCommand(db.DB_SELECT, c.Command(tableName, nil))
-	a.SetCommand(db.DB_SAVE, c.Command(tableName, nil))
-	return a
-}
-*/
-
 func sel(q ...string) (r M) {
 	r = make(M, len(q))
 	for _, s := range q {
@@ -145,7 +123,6 @@ func (c *Connection) Table(tableName string, parms M) db.ICursor {
 	cs.CursorSource = db.CursorTable
 	cs.Connection = c
 	cs.mgoSess, cs.mgoColl = c.CopySession(tableName)
-
 	pipe, hasPipe := parms["pipe"]
 	find, hasFind := parms["find"]
 	sort, hasSort := parms["sort"]
@@ -155,7 +132,7 @@ func (c *Connection) Table(tableName string, parms M) db.ICursor {
 
 	//_ = "breakpoint"
 	if hasPipe {
-		cs.mgoPipe = cs.mgoColl.Pipe(pipe).AllowDiskUse()
+		cs.mgoPipe = cs.mgoColl.Pipe(pipe).AllowDiskUse().Batch(0)
 		cs.Type = CursorType_Pipe
 	} else {
 		cs.Type = CursorType_Query
@@ -169,9 +146,8 @@ func (c *Connection) Table(tableName string, parms M) db.ICursor {
 			selecteds := sel(selectFields.([]string)...)
 			cs.mgoQuery = cs.mgoQuery.Select(selecteds)
 		}
-
 		if hasSort {
-			cs.mgoQuery = cs.mgoQuery.Sort(sort.(string))
+			cs.mgoQuery = cs.mgoQuery.Sort(sort.([]string)...)
 		}
 		if hasSkip {
 			cs.mgoQuery = cs.mgoQuery.Skip(skip.(int))

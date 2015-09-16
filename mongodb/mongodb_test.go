@@ -55,22 +55,27 @@ func TestAggregate(t *testing.T) {
 			Datereport_Date  time.Time
 			Wellinfos_WellId string
 		} `bson:"_id"`
-		Sum_TotalDays float64
-		Sum_TotalCost float64
+		Sum_TotalDays float64 `bson:"sum_activities_duration"`
+		Sum_TotalCost float64 `bson:"average_activities_dailycost"`
 	}{}
 	//ms := []M{}
 	q := conn.Query().SetStringSign("\"").
 		From("DataSummary").
-		GroupBy("wellinfos.wellid", "datereport.date").
-		Aggregate(Sum("totaldays"), Sum("totalcost"))
+		Where(Eq("wellinfos.wellid", "D7")).
+		Flatten("activities").
+		//Where(Eq("activities.phase", "ABND")).
+		GroupBy("datereport.date", "wellinfos.wellid").
+		Aggregate(Sum("activities.duration"), Avg("activities.dailycost"))
 	e = q.Cursor(nil).FetchAll(&ms, true)
 	if e != nil {
 		t.Errorf("Error fetch => %s \n", e.Error())
 	}
-	fmt.Printf("... OK. Found %d records. Sample of first record is per below\n%v\n\n", len(ms), ms[0])
+	fmt.Printf("... OK. Found %d records. Sample of first record is per below\n%v\n\n", len(ms),
+		JsonString(ms[10]))
 }
 
 func TestQueryWithParam(t *testing.T) {
+	t.Skip()
 	connect()
 	defer Close()
 
@@ -95,6 +100,7 @@ func TestQueryWithParam(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
+	t.Skip()
 	connect()
 	defer Close()
 
@@ -113,6 +119,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
+	t.Skip()
 	connect()
 	defer Close()
 
@@ -129,6 +136,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	t.Skip()
 	connect()
 	defer Close()
 

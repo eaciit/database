@@ -24,6 +24,7 @@ type IQuery interface {
 	OrderBy(...string) IQuery
 	GroupBy(...string) IQuery
 	Aggregate(...*QE) IQuery
+	Flatten(string) IQuery
 	From(...string) IQuery
 	Limit(int) IQuery
 	Skip(int) IQuery
@@ -143,6 +144,11 @@ func (q *QueryBase) Save() IQuery {
 
 func (q *QueryBase) Update() IQuery {
 	q.addQE("update", &QE{})
+	return q
+}
+
+func (q *QueryBase) Flatten(field string) IQuery {
+	q.addQE("flatten", &QE{"", OpFlatten, field})
 	return q
 }
 

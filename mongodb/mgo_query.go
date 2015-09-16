@@ -5,6 +5,7 @@ import (
 	. "github.com/eaciit/database/base"
 	"github.com/eaciit/errorlib"
 	. "github.com/eaciit/toolkit"
+	//"gopkg.in/mgo.v2/bson"
 	"strings"
 )
 
@@ -16,6 +17,7 @@ type Query struct {
 func (q *Query) Parse(qe *QE, ins M) interface{} {
 	var v *QE
 	result := M{}
+	//fmt.Printf("Debug m: %s \n", ins)
 
 	//-- field
 	if qe.FieldOp == OpSelect {
@@ -48,12 +50,24 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 	} else if qe.FieldOp == OpIn {
 		result.Set(qe.FieldId, M{}.Set("$in", qe.Value))
 		//fmt.Printf("value:%v\nresult:\n%v\n", JsonString(qe.Value), JsonString(result))
+	} else if qe.FieldOp == OpContains {
+		result.Set(qe.FieldId, M{}.
+			Set("$regex", fmt.Sprintf(".*%s.*", qe.Value.([]string)[0])).
+			Set("$options", "i"))
+		//fmt.Printf("value:%v\nresult:\n%v\n", JsonString(qe.Value), JsonString(result))
 	} else if qe.FieldOp == OpNin {
 		result.Set(qe.FieldId, M{}.Set("$nin", qe.Value))
 	} else
 
+	//--- sort
+	if qe.FieldOp == OpOrderBy {
+		return qe.Value
+	} else
+
 	//--- Aggregate
-	if qe.FieldOp == OpGroupBy {
+	if qe.FieldOp == OpFlatten {
+		return qe.Value
+	} else if qe.FieldOp == OpGroupBy {
 		groups := M{}
 		groupValues := qe.Value.([]string)
 		for _, v := range groupValues {
@@ -70,7 +84,7 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 			} else if qe.FieldOp == AggrCount {
 				m_aggr.Set("$sum", 1)
 			} else if qe.FieldOp == AggrAvg {
-				m_aggr.Set("$average", "$"+qe.FieldId)
+				m_aggr.Set("$avg", "$"+qe.FieldId)
 			} else if qe.FieldOp == AggrMin {
 				m_aggr.Set("$min", "$"+qe.FieldId)
 			} else if qe.FieldOp == AggrMax {
@@ -80,7 +94,8 @@ func (q *Query) Parse(qe *QE, ins M) interface{} {
 			} else if qe.FieldOp == AggrLast {
 				m_aggr.Set("$last", "$"+qe.FieldId)
 			}
-			aggrs.Set(strings.Replace(qe.FieldOp, "$", "", -1)+"_"+qe.FieldId, m_aggr)
+			aggrs.Set(strings.Replace(qe.FieldOp, "$", "", -1)+"_"+
+				strings.Replace(qe.FieldId, ".", "_", -1), m_aggr)
 		}
 		////_ = "breakpoint"
 		return aggrs
@@ -124,6 +139,7 @@ func mapEither(m1 M, m2 M, element string) (interface{}, bool) {
 func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 	var e error
 	s := q.Settings()
+	//fmt.Printf("Settings %v \n", s)
 	tableName := s.Get("from", "").([]string)[0]
 	if tableName == "" {
 		return nil, nil, errorlib.Error(packageName, modQuery, "Run",
@@ -145,6 +161,9 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 	if commandType == DB_SELECT {
 		// read setting from main parms
 		sort, hasSort := mapEither(ins, s, "sort")
+		if hasSort == false {
+			sort, hasSort = mapEither(ins, s, "orderby")
+		}
 		skip, hasSkip := mapEither(ins, s, "skip")
 		fields, hasFields := mapEither(ins, s, "select")
 		limit, hasLimit := mapEither(ins, s, "limit")
@@ -188,21 +207,37 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 		}
 
 		//--- handle aggregat compilation
+		aggrs, hasaggr := s["aggregate"]
 		groupby, hasgroupby := s["groupby"]
-		if hasgroupby {
+		if hasaggr || hasgroupby {
+			pipes := []M{}
 			pipe := M{}
+
+			//--- check find
+			if find, cursorHasFind := cursorParm["find"]; cursorHasFind {
+				pipe.Set("$match", find)
+				pipes = append(pipes, pipe)
+			}
+
+			//--- check flattern first
+			flatten, hasflatten := s["flatten"]
+			if hasflatten {
+				pipe = M{}
+				pipe.Set("$unwind", "$"+flatten.(string))
+				pipes = append(pipes, pipe)
+			}
 			groupm := M{}
+
 			groupm.Set("_id", groupby)
-			aggrs, hasaggr := s["aggregate"]
+			pipe = M{}
 			if hasaggr {
 				for k, v := range aggrs.(M) {
 					groupm.Set(k, v)
 				}
 			}
 			pipe.Set("$group", groupm)
-
-			pipes := []M{}
 			pipes = append(pipes, pipe)
+
 			if hasSkip {
 				pipes = append(pipes, M{}.Set("$skip", cursorParm["skip"].(int)))
 			}
@@ -212,8 +247,10 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 
 			cursorParm = M{}
 			cursorParm.Set("pipe", pipes)
+			//fmt.Printf("%v \n", JsonString(cursorParm))
 		}
 		//_ = "breakpoint"
+		//fmt.Printf("Debug cp: %v \n", JsonString(cursorParm))
 		cursor := q.Connection.Table(tableName, cursorParm)
 		return cursor, 0, nil
 	} else {
