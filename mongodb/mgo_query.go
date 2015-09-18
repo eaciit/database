@@ -6,6 +6,7 @@ import (
 	. "github.com/eaciit/database/base"
 	"github.com/eaciit/errorlib"
 	. "github.com/eaciit/toolkit"
+	"gopkg.in/mgo.v2"
 	"os"
 	"strings"
 )
@@ -187,7 +188,7 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 		cursorParm := M{}
 		////_ = "breakpoint"
 		if s.Has("where") {
-			fmt.Println("...", s.Get("where", nil))
+			//fmt.Println("...", s.Get("where", nil))
 			cursorParm["find"] = s.Get("where", nil)
 		}
 		if s.Has("whereString") {
@@ -270,11 +271,21 @@ func (q *Query) Compile(ins M) (ICursor, interface{}, error) {
 		}
 		//_ = "breakpoint"
 		//fmt.Printf("Debug cp: %v \n", JsonString(cursorParm))
+		if q.Pooling() {
+			cursorParm.Set("pooling", q.Pooling())
+		}
 		cursor := q.Connection.Table(tableName, cursorParm)
 		return cursor, 0, nil
 	} else {
-		sess, mgoColl := q.Connection.(*Connection).CopySession(tableName)
-		defer sess.Close()
+		var sess *mgo.Session
+		var mgoColl *mgo.Collection
+		if q.Pooling() == true {
+			conn := q.Connection.(*Connection)
+			mgoColl = conn.mses.DB(conn.Database).C(tableName)
+		} else {
+			sess, mgoColl = q.Connection.(*Connection).CopySession(tableName)
+			defer sess.Close()
+		}
 
 		////_ = "breakpoint"
 		hasIdField := false

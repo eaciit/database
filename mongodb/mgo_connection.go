@@ -68,8 +68,20 @@ func (c *Connection) Query() db.IQuery {
 
 func (c *Connection) Execute(stmt string, parms M) (int, error) {
 	var e error
-	sess, coll := c.CopySession(stmt)
-	defer sess.Close()
+	if parms == nil {
+		parms = M{}
+	}
+	pooling := parms.Get("pooling", false).(bool)
+
+	var sess *mgo.Session
+	var coll *mgo.Collection
+	if pooling {
+		sess = c.mses
+		coll = c.mses.DB(c.Database).C(stmt)
+	} else {
+		sess, coll = c.CopySession(stmt)
+		defer sess.Close()
+	}
 	//sess = c.mses
 
 	//coll := c.mdb.C(stmt)
@@ -119,17 +131,27 @@ func sel(q ...string) (r M) {
 }
 
 func (c *Connection) Table(tableName string, parms M) db.ICursor {
-	cs := new(Cursor)
-	cs.CursorSource = db.CursorTable
-	cs.Connection = c
-	cs.mgoSess, cs.mgoColl = c.CopySession(tableName)
+	if parms == nil {
+		parms = M{}
+	}
 	pipe, hasPipe := parms["pipe"]
 	find, hasFind := parms["find"]
 	sort, hasSort := parms["sort"]
 	skip, hasSkip := parms["skip"]
 	selectFields, hasSelectFields := parms["select"]
 	limit, hasLimit := parms["limit"]
+	pooling := parms.Get("pooling", false).(bool)
 
+	cs := new(Cursor)
+	cs.CursorSource = db.CursorTable
+	cs.Connection = c
+	if pooling {
+		cs.SetPooling(true)
+		cs.mgoSess = c.mses
+		cs.mgoColl = c.mses.DB(c.Database).C(tableName)
+	} else {
+		cs.mgoSess, cs.mgoColl = c.CopySession(tableName)
+	}
 	//_ = "breakpoint"
 	if hasPipe {
 		cs.mgoPipe = cs.mgoColl.Pipe(pipe).AllowDiskUse().Batch(0)

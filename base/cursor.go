@@ -16,6 +16,8 @@ type ICursor interface {
 
 	Error() string
 	SetError(string)
+	SetPooling(bool)
+	Pooling() bool
 }
 
 type CursorSourceType int
@@ -31,6 +33,15 @@ type CursorBase struct {
 	QueryString  string
 
 	errorTxt string
+	pooling  bool
+}
+
+func (c *CursorBase) Pooling() bool {
+	return c.pooling
+}
+
+func (c *CursorBase) SetPooling(p bool) {
+	c.pooling = p
 }
 
 func (c *CursorBase) Error() string {

@@ -148,7 +148,7 @@ func (c *Cursor) Close() {
 		c.mgoIter.Close()
 	}
 
-	if c.mgoSess != nil {
+	if c.mgoSess != nil && !c.Pooling() {
 		c.mgoSess.Close()
 	}
 }

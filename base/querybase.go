@@ -44,6 +44,9 @@ type IQuery interface {
 	Q() IQuery
 	Settings() M
 	Reset()
+
+	Pooling() bool
+	SetPooling(bool) IQuery
 }
 
 type QueryBase struct {
@@ -53,6 +56,17 @@ type QueryBase struct {
 
 	Elements map[string]*QE
 	settings M
+
+	pooling bool
+}
+
+func (q *QueryBase) Pooling() bool {
+	return q.pooling
+}
+
+func (q *QueryBase) SetPooling(p bool) IQuery {
+	q.pooling = p
+	return q.Q()
 }
 
 func (q *QueryBase) SetConnection(c IConnection) IQuery {
@@ -62,11 +76,15 @@ func (q *QueryBase) SetConnection(c IConnection) IQuery {
 
 func (q *QueryBase) SetQ(i IQuery) IQuery {
 	q.q = i
-	return q
+	return q.q
 }
 
 func (q *QueryBase) Q() IQuery {
-	return q.q
+	if q.q == nil {
+		return q
+	} else {
+		return q.q
+	}
 }
 
 func (q *QueryBase) Settings() M {
@@ -75,7 +93,7 @@ func (q *QueryBase) Settings() M {
 
 func (q *QueryBase) SetStringSign(str string) IQuery {
 	q.stringSign = str
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) addQE(key string, v *QE) {
@@ -87,22 +105,22 @@ func (q *QueryBase) addQE(key string, v *QE) {
 
 func (q *QueryBase) Select(fields ...string) IQuery {
 	q.addQE("select", &QE{"", OpSelect, fields})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) SetFields(fields ...string) IQuery {
 	q.addQE("set", &QE{"", OpSetfield, fields})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) Aggregate(aggregates ...*QE) IQuery {
 	q.addQE("aggregate", &QE{"", OpAggregate, aggregates})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) From(tablenames ...string) IQuery {
 	q.addQE("from", &QE{"", OpFromTable, tablenames})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) Where(qes ...*QE) IQuery {
@@ -110,37 +128,37 @@ func (q *QueryBase) Where(qes ...*QE) IQuery {
 	// because this will become a problem
 	// for rdbms
 	q.addQE("where", And(qes...))
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) WhereString(where string) IQuery {
 	q.addQE("whereString", &QE{"", OpWhereString, where})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) OrderBy(fields ...string) IQuery {
 	q.addQE("orderby", &QE{"", OpOrderBy, fields})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) GroupBy(gs ...string) IQuery {
 	q.addQE("groupby", &QE{"", OpGroupBy, gs})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) Skip(s int) IQuery {
 	q.addQE("skip", &QE{"", OpSkip, s})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) Limit(l int) IQuery {
 	q.addQE("limit", &QE{"", OpLimit, l})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) Insert() IQuery {
 	q.addQE("insert", &QE{})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) Save() IQuery {
@@ -150,17 +168,17 @@ func (q *QueryBase) Save() IQuery {
 
 func (q *QueryBase) Update() IQuery {
 	q.addQE("update", &QE{})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) Flatten(field string) IQuery {
 	q.addQE("flatten", &QE{"", OpFlatten, field})
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) Delete() IQuery {
 	q.addQE("delete", &QE{})
-	return q
+	return q.Q()
 }
 
 // To add command pass a M object with following signature
@@ -174,7 +192,7 @@ func (q *QueryBase) Command(ins M) IQuery {
 		cmdname = "cmd." + cmdname
 		q.addQE(cmdname, &QE{cmdname, OpCommand, ins})
 	}
-	return q
+	return q.Q()
 }
 
 func (q *QueryBase) CommandType(ins M) DB_OP {
